@@ -234,6 +234,78 @@ The tool extracts and recreates the following schema elements:
 
 3. The emulator will be available at `https://localhost:8081`
 
+## Debugging
+
+### VS Code Debugging Setup
+
+This project includes VS Code debugging configurations to help you debug migration executions. The configurations are located in `.vscode/launch.json` and provide several debugging scenarios:
+
+#### Available Debug Configurations
+
+1. **Debug: Full Migration** - Debug the complete migration process from Azure to emulator
+2. **Debug: Extract Schema** - Debug schema extraction from Azure Cosmos DB
+3. **Debug: Create Schema** - Debug schema creation in the emulator from a JSON file
+4. **Debug: List Databases** - Debug the database listing functionality
+5. **Debug: Custom Arguments** - Debug with custom command-line arguments
+
+#### Prerequisites for Debugging
+
+1. **Environment Setup**: Ensure your `.env` file is properly configured with Azure Cosmos DB credentials:
+   ```env
+   AZURE_COSMOS_ENDPOINT=https://your-account.documents.azure.com:443/
+   AZURE_COSMOS_KEY=your-azure-cosmos-key
+   AZURE_COSMOS_DATABASE=your-database-name
+   ```
+
+2. **Emulator Running**: For migration and schema creation debugging, ensure the Cosmos DB emulator is running on `https://localhost:8081`
+
+#### How to Debug
+
+1. **Open VS Code** in the project directory
+2. **Set Breakpoints** in the relevant files (`cli.js`, `migrator.js`, `config.js`, etc.)
+3. **Open Debug Panel** (Ctrl+Shift+D / Cmd+Shift+D)
+4. **Select Configuration** from the dropdown (e.g., "Debug: Full Migration")
+5. **Start Debugging** (F5 or click the play button)
+
+#### Debugging Tips
+
+- **Environment Variables**: All configurations automatically load environment variables from your `.env` file
+- **Console Output**: Debug output appears in the VS Code integrated terminal
+- **Breakpoints**: Set breakpoints in key locations:
+  - `cli.js` - Command parsing and error handling
+  - `migrator.js` - Core migration logic
+  - `config.js` - Configuration validation
+  - `schema-extractor.js` - Schema extraction logic
+  - `schema-creator.js` - Schema creation logic
+
+- **Custom Arguments**: Use the "Debug: Custom Arguments" configuration to test specific command combinations by modifying the `args` array in `launch.json`
+
+#### Common Debugging Scenarios
+
+**Migration Issues:**
+```javascript
+// Set breakpoints in migrator.js at:
+async migrate() {
+    // Breakpoint here to debug migration start
+}
+```
+
+**Configuration Problems:**
+```javascript
+// Set breakpoints in config.js at:
+validate() {
+    // Breakpoint here to debug config validation
+}
+```
+
+**Schema Extraction Issues:**
+```javascript
+// Set breakpoints in schema-extractor.js at:
+async extractSchema() {
+    // Breakpoint here to debug extraction logic
+}
+```
+
 ## Troubleshooting
 
 ### Common Issues

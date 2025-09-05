@@ -1,0 +1,105 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: Full Migration",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.js",
+      "args": [
+        "migrate",
+        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
+        "--azure-key", "${env:AZURE_COSMOS_KEY}",
+        "--azure-database", "${env:AZURE_COSMOS_DATABASE}",
+        "--overwrite"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Debug: Extract Schema",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.js",
+      "args": [
+        "extract",
+        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
+        "--azure-key", "${env:AZURE_COSMOS_KEY}",
+        "--azure-database", "${env:AZURE_COSMOS_DATABASE}",
+        "--output", "debug-schema.json"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Debug: Create Schema",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.js",
+      "args": [
+        "create",
+        "debug-schema.json",
+        "--overwrite"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Debug: List Databases",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.js",
+      "args": [
+        "list",
+        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
+        "--azure-key", "${env:AZURE_COSMOS_KEY}"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Debug: Custom Arguments",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli.js",
+      "args": [],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    }
+  ]
+}
