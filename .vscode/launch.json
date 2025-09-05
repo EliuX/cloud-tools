@@ -139,6 +139,103 @@
         "!**/node_modules/**"
       ],
       "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
+      "name": "Debug: Storage Migration (Full)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "migrate",
+        "--skip-existing"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage List Services",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "list"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage Copy Containers",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "copy",
+        "container1",
+        "container2",
+        "--skip-existing"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage Validate Credentials",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "validate"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage Custom Arguments",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
     }
   ]
 }

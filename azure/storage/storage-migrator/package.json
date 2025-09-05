@@ -1,0 +1,33 @@
+{
+  "name": "storage-migrator",
+  "version": "1.0.0",
+  "description": "Migrate Azure Storage Account data from one account to another",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "migrate": "node cli.js migrate",
+    "list": "node cli.js list",
+    "copy": "node cli.js copy"
+  },
+  "keywords": [
+    "azure-storage",
+    "azure",
+    "migration",
+    "blob-storage",
+    "storage-account"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/storage-blob": "^12.17.0",
+    "@azure/storage-file-share": "^12.16.0",
+    "@azure/storage-queue": "^12.15.0",
+    "@azure/storage-file-datalake": "^12.15.0",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "progress": "^2.0.3"
+  }
+}
