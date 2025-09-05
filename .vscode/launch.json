@@ -8,9 +8,6 @@
       "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
       "args": [
         "migrate",
-        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
-        "--azure-key", "${env:AZURE_COSMOS_KEY}",
-        "--azure-database", "${env:AZURE_COSMOS_DATABASE}",
         "--overwrite"
       ],
       "console": "integratedTerminal",
@@ -31,9 +28,6 @@
       "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
       "args": [
         "extract",
-        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
-        "--azure-key", "${env:AZURE_COSMOS_KEY}",
-        "--azure-database", "${env:AZURE_COSMOS_DATABASE}",
         "--output", "debug-schema.json"
       ],
       "console": "integratedTerminal",
@@ -74,9 +68,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
       "args": [
-        "list",
-        "--azure-endpoint", "${env:AZURE_COSMOS_ENDPOINT}",
-        "--azure-key", "${env:AZURE_COSMOS_KEY}"
+        "list"
       ],
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
