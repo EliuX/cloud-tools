@@ -6,7 +6,9 @@ A Node.js tool to migrate Cosmos DB database schemas from Azure to a local Cosmo
 
 - **Schema Extraction**: Extract complete database schema from Azure Cosmos DB
 - **Schema Creation**: Recreate schema structure in local Cosmos DB emulator
-- **Full Migration**: End-to-end migration from Azure to emulator
+- **Data Migration**: Migrate documents with error resilience and batch processing
+- **Full Migration**: End-to-end migration from Azure to emulator (schema + data)
+- **Error Resilience**: Continue migration even when individual operations fail
 - **Verification**: Verify that migration completed successfully
 - **CLI Interface**: Easy-to-use command line interface
 - **Configuration**: Flexible configuration via environment variables or CLI options
@@ -39,7 +41,7 @@ A Node.js tool to migrate Cosmos DB database schemas from Azure to a local Cosmo
 
 ## Usage
 
-### Complete Migration
+### Complete Migration (Schema Only)
 
 Migrate schema from Azure to local emulator:
 
@@ -47,13 +49,21 @@ Migrate schema from Azure to local emulator:
 node cli.js migrate
 ```
 
-With CLI options:
+### Complete Migration (Schema + Data)
+
+Migrate both schema and data from Azure to local emulator:
+
+```bash
+node cli.js migrate --include-data --overwrite
+```
+
+With additional options:
 ```bash
 node cli.js migrate \
-  --azure-endpoint "https://your-account.documents.azure.com:443/" \
-  --azure-key "your-key" \
-  --azure-database "your-db" \
-  --overwrite
+  --include-data \
+  --skip-existing \
+  --overwrite \
+  --batch-size 50
 ```
 
 ### Extract Schema Only
@@ -70,6 +80,22 @@ Create schema in emulator from previously extracted JSON file:
 
 ```bash
 node cli.js create my-schema.json --overwrite
+```
+
+### Data Migration Only
+
+Migrate data only (schema must already exist in target):
+
+```bash
+node cli.js migrate-data
+```
+
+With options for resilient migration:
+```bash
+node cli.js migrate-data \
+  --skip-existing \
+  --batch-size 100 \
+  --max-retries 5
 ```
 
 ### List Available Databases
@@ -93,7 +119,9 @@ Perform complete migration from Azure to emulator.
 - `--emulator-key <key>` - Emulator key (default: emulator default)
 - `--emulator-database <database>` - Emulator database name (default: same as Azure)
 - `--overwrite` - Overwrite existing database/containers
-- `--include-data` - Include data migration (not implemented yet)
+- `--include-data` - Include data migration
+- `--skip-existing` - Skip documents that already exist in target
+- `--continue-on-error` - Continue migration even if some documents fail (default: true)
 
 ### `extract`
 Extract schema from Azure Cosmos DB.
@@ -115,6 +143,20 @@ Create schema in emulator from JSON file.
 - `--emulator-key <key>` - Emulator key
 - `--emulator-database <database>` - Override database name
 - `--overwrite` - Overwrite existing database/containers
+
+### `migrate-data`
+Migrate data only (schema must already exist in target).
+
+**Options:**
+- `-e, --azure-endpoint <endpoint>` - Azure Cosmos DB endpoint
+- `-k, --azure-key <key>` - Azure Cosmos DB key
+- `-d, --azure-database <database>` - Azure database name
+- `--emulator-endpoint <endpoint>` - Emulator endpoint (default: https://localhost:8081)
+- `--emulator-key <key>` - Emulator key (default: emulator default)
+- `--emulator-database <database>` - Emulator database name (default: same as Azure)
+- `--skip-existing` - Skip documents that already exist in target
+- `--batch-size <size>` - Batch size for data migration (default: 100)
+- `--max-retries <retries>` - Maximum retry attempts for failed operations (default: 3)
 
 ### `list`
 List available databases in Azure Cosmos DB.
@@ -145,6 +187,7 @@ INCLUDE_DATA=false
 BATCH_SIZE=100
 MAX_RETRIES=3
 OVERWRITE=false
+SKIP_EXISTING=false
 ```
 
 ### Programmatic Usage
@@ -242,11 +285,13 @@ This project includes VS Code debugging configurations to help you debug migrati
 
 #### Available Debug Configurations
 
-1. **Debug: Cosmos Migration (Full)** - Debug the complete migration process from Azure to emulator
+1. **Debug: Cosmos Migration (Full)** - Debug the complete migration process from Azure to emulator (schema only)
 2. **Debug: Cosmos Extract Schema** - Debug schema extraction from Azure Cosmos DB
 3. **Debug: Cosmos Create Schema** - Debug schema creation in the emulator from a JSON file
 4. **Debug: Cosmos List Databases** - Debug the database listing functionality
-5. **Debug: Cosmos Custom Arguments** - Debug with custom command-line arguments
+5. **Debug: Cosmos Migration with Data** - Debug full migration including data migration
+6. **Debug: Cosmos Data Migration Only** - Debug data-only migration with batch processing
+7. **Debug: Cosmos Custom Arguments** - Debug with custom command-line arguments
 
 #### Prerequisites for Debugging
 
@@ -277,6 +322,7 @@ This project includes VS Code debugging configurations to help you debug migrati
   - `config.js` - Configuration validation
   - `schema-extractor.js` - Schema extraction logic
   - `schema-creator.js` - Schema creation logic
+  - `data-migrator.js` - Data migration logic and error handling
 
 - **Custom Arguments**: Use the "Debug: Cosmos Custom Arguments" configuration to test specific command combinations by modifying the `args` array in the root `.vscode/launch.json`
 
@@ -306,6 +352,18 @@ async extractSchema() {
 }
 ```
 
+**Data Migration Issues:**
+```javascript
+// Set breakpoints in data-migrator.js at:
+async migrateDatabase() {
+    // Breakpoint here to debug data migration start
+}
+
+async _migrateBatch() {
+    // Breakpoint here to debug batch processing and error handling
+}
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -330,12 +388,38 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 - `Container 'name' already exists` - Use `--overwrite` flag to replace existing containers
 - `SSL certificate problem` - See SSL certificate issues above
 
+## Data Migration Features
+
+### Error Resilience
+- **Continue on Errors**: Migration continues even if individual documents fail
+- **Batch Processing**: Documents are processed in configurable batches for better performance
+- **Retry Logic**: Automatic retries with exponential backoff for transient errors
+- **Skip Existing**: Option to skip documents that already exist in the target database
+- **Detailed Statistics**: Comprehensive reporting of migration success/failure rates
+
+### Migration Statistics
+After data migration, you'll see a detailed summary:
+```
+📊 Data Migration Summary:
+Total Documents: 1500
+✅ Migrated: 1485
+⏭️  Skipped: 10
+❌ Failed: 5
+Success Rate: 99.0%
+```
+
+### Error Handling
+- Rate limiting (429) and server errors (5xx) are automatically retried
+- Document-level errors are logged but don't stop the migration
+- Up to 10 specific error messages are displayed for troubleshooting
+- System properties (_rid, _self, _etag, etc.) are automatically cleaned before migration
+
 ## Limitations
 
-- Data migration is not yet implemented (schema only)
 - Stored procedures, triggers, and UDFs are not migrated
 - Some advanced indexing configurations may need manual adjustment
 - Cross-region replication settings are not applicable to emulator
+- Large documents (>2MB) may require special handling
 
 ## Contributing
 

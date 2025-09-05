@@ -27,7 +27,9 @@ program
     .option('--emulator-key <key>', 'Emulator key (default: emulator default key)')
     .option('--emulator-database <database>', 'Emulator database name (default: same as Azure)')
     .option('--overwrite', 'Overwrite existing database/containers')
-    .option('--include-data', 'Include data migration (not implemented yet)')
+    .option('--include-data', 'Include data migration')
+    .option('--skip-existing', 'Skip documents that already exist in target')
+    .option('--continue-on-error', 'Continue migration even if some documents fail (default: true)')
     .action(async (options) => {
         const spinner = ora('Initializing migration...').start();
         
@@ -40,7 +42,9 @@ program
                 emulatorKey: options.emulatorKey,
                 emulatorDatabaseName: options.emulatorDatabase,
                 overwrite: options.overwrite,
-                includeData: options.includeData
+                includeData: options.includeData,
+                skipExisting: options.skipExisting,
+                continueOnError: options.continueOnError !== false
             });
             
             spinner.stop();
@@ -119,6 +123,56 @@ program
         } catch (error) {
             spinner.stop();
             console.error(chalk.red(`\n❌ Schema creation failed: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('migrate-data')
+    .description('Migrate data only (schema must already exist in target)')
+    .option('-e, --azure-endpoint <endpoint>', 'Azure Cosmos DB endpoint')
+    .option('-k, --azure-key <key>', 'Azure Cosmos DB key')
+    .option('-d, --azure-database <database>', 'Azure Cosmos DB database name')
+    .option('--emulator-endpoint <endpoint>', 'Emulator endpoint (default: https://localhost:8081)')
+    .option('--emulator-key <key>', 'Emulator key (default: emulator default key)')
+    .option('--emulator-database <database>', 'Emulator database name (default: same as Azure)')
+    .option('--skip-existing', 'Skip documents that already exist in target')
+    .option('--batch-size <size>', 'Batch size for data migration (default: 100)', parseInt)
+    .option('--max-retries <retries>', 'Maximum retry attempts for failed operations (default: 3)', parseInt)
+    .action(async (options) => {
+        const spinner = ora('Initializing data migration...').start();
+        
+        try {
+            const config = new CosmosConfig({
+                azureEndpoint: options.azureEndpoint,
+                azureKey: options.azureKey,
+                azureDatabaseName: options.azureDatabase,
+                emulatorEndpoint: options.emulatorEndpoint,
+                emulatorKey: options.emulatorKey,
+                emulatorDatabaseName: options.emulatorDatabase,
+                batchSize: options.batchSize,
+                maxRetries: options.maxRetries
+            });
+            
+            spinner.stop();
+            
+            const migrator = new CosmosMigrator(config);
+            const result = await migrator.dataMigrator.migrateDatabase(
+                config.azureDatabaseName,
+                config.emulatorDatabaseName
+            );
+            
+            if (result.success) {
+                console.log(chalk.green('\n🎉 Data migration completed successfully!'));
+            } else {
+                console.log(chalk.yellow('\n⚠️ Data migration completed with errors'));
+            }
+            
+            console.log(chalk.blue(`Migrated: ${result.stats.migratedDocuments}/${result.stats.totalDocuments} documents`));
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Data migration failed: ${error.message}`));
             process.exit(1);
         }
     });

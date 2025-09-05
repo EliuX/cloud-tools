@@ -23,6 +23,8 @@ export class CosmosConfig {
         this.batchSize = parseInt(options.batchSize || process.env.BATCH_SIZE || '100');
         this.maxRetries = parseInt(options.maxRetries || process.env.MAX_RETRIES || '3');
         this.overwrite = options.overwrite || process.env.OVERWRITE === 'true' || false;
+        this.skipExisting = options.skipExisting || process.env.SKIP_EXISTING === 'true' || false;
+        this.continueOnError = options.continueOnError !== false; // Default to true
         
         // Set emulator database name to azure database name if not specified
         if (!this.emulatorDatabaseName) {

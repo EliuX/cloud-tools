@@ -82,6 +82,48 @@
       "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
     },
     {
+      "name": "Debug: Cosmos Migration with Data",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
+      "args": [
+        "migrate",
+        "--include-data",
+        "--overwrite"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
+      "name": "Debug: Cosmos Data Migration Only",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
+      "args": [
+        "migrate-data",
+        "--skip-existing",
+        "--batch-size", "50"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
       "name": "Debug: Cosmos Custom Arguments",
       "type": "node",
       "request": "launch",

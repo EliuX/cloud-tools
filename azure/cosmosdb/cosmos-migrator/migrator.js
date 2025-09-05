@@ -4,6 +4,7 @@
 
 import { SchemaExtractor } from './schema-extractor.js';
 import { SchemaCreator } from './schema-creator.js';
+import { DataMigrator } from './data-migrator.js';
 import { CosmosConfig } from './config.js';
 
 export class CosmosMigrator {
@@ -16,6 +17,18 @@ export class CosmosMigrator {
         this.creator = new SchemaCreator(
             config.emulatorEndpoint,
             config.emulatorKey
+        );
+        this.dataMigrator = new DataMigrator(
+            config.azureEndpoint,
+            config.azureKey,
+            config.emulatorEndpoint,
+            config.emulatorKey,
+            {
+                batchSize: config.batchSize,
+                maxRetries: config.maxRetries,
+                continueOnError: config.continueOnError,
+                skipExisting: config.skipExisting
+            }
         );
     }
 
@@ -52,13 +65,25 @@ export class CosmosMigrator {
             const verification = await this.creator.verifySchema(schema);
             this._printVerificationResults(verification);
             
+            let dataMigrationResult = null;
+            
+            // Migrate data if requested
+            if (this.config.includeData) {
+                console.log('\n4. Migrating data...');
+                dataMigrationResult = await this.dataMigrator.migrateDatabase(
+                    this.config.azureDatabaseName,
+                    this.config.emulatorDatabaseName
+                );
+            }
+            
             console.log('\n✅ Migration completed successfully!');
             
             return {
                 success: true,
                 schema,
                 verification,
-                schemaFile
+                schemaFile,
+                dataMigration: dataMigrationResult
             };
             
         } catch (error) {
