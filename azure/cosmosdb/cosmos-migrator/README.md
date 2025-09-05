@@ -238,15 +238,15 @@ The tool extracts and recreates the following schema elements:
 
 ### VS Code Debugging Setup
 
-This project includes VS Code debugging configurations to help you debug migration executions. The configurations are located in `.vscode/launch.json` and provide several debugging scenarios:
+This project includes VS Code debugging configurations to help you debug migration executions. The configurations are located in the root `.vscode/launch.json` file and provide several debugging scenarios:
 
 #### Available Debug Configurations
 
-1. **Debug: Full Migration** - Debug the complete migration process from Azure to emulator
-2. **Debug: Extract Schema** - Debug schema extraction from Azure Cosmos DB
-3. **Debug: Create Schema** - Debug schema creation in the emulator from a JSON file
-4. **Debug: List Databases** - Debug the database listing functionality
-5. **Debug: Custom Arguments** - Debug with custom command-line arguments
+1. **Debug: Cosmos Migration (Full)** - Debug the complete migration process from Azure to emulator
+2. **Debug: Cosmos Extract Schema** - Debug schema extraction from Azure Cosmos DB
+3. **Debug: Cosmos Create Schema** - Debug schema creation in the emulator from a JSON file
+4. **Debug: Cosmos List Databases** - Debug the database listing functionality
+5. **Debug: Cosmos Custom Arguments** - Debug with custom command-line arguments
 
 #### Prerequisites for Debugging
 
@@ -261,10 +261,10 @@ This project includes VS Code debugging configurations to help you debug migrati
 
 #### How to Debug
 
-1. **Open VS Code** in the project directory
+1. **Open VS Code** in the root project directory (`cloud-tools/`)
 2. **Set Breakpoints** in the relevant files (`cli.js`, `migrator.js`, `config.js`, etc.)
 3. **Open Debug Panel** (Ctrl+Shift+D / Cmd+Shift+D)
-4. **Select Configuration** from the dropdown (e.g., "Debug: Full Migration")
+4. **Select Configuration** from the dropdown (e.g., "Debug: Cosmos Migration (Full)")
 5. **Start Debugging** (F5 or click the play button)
 
 #### Debugging Tips
@@ -278,7 +278,7 @@ This project includes VS Code debugging configurations to help you debug migrati
   - `schema-extractor.js` - Schema extraction logic
   - `schema-creator.js` - Schema creation logic
 
-- **Custom Arguments**: Use the "Debug: Custom Arguments" configuration to test specific command combinations by modifying the `args` array in `launch.json`
+- **Custom Arguments**: Use the "Debug: Cosmos Custom Arguments" configuration to test specific command combinations by modifying the `args` array in the root `.vscode/launch.json`
 
 #### Common Debugging Scenarios
 

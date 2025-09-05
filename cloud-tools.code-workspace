@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "name": "Cloud Tools (Root)",
+      "path": "."
+    },
+    {
+      "name": "Cosmos Migrator",
+      "path": "./azure/cosmosdb/cosmos-migrator"
+    }
+  ],
+  "settings": {},
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-node-debug2"
+    ]
+  }
+}
