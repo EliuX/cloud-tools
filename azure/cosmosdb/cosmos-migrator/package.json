@@ -1,0 +1,28 @@
+{
+  "name": "cosmos-migrator",
+  "version": "1.0.0",
+  "description": "Migrate Cosmos DB schema from Azure to local emulator",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "migrate": "node cli.js migrate",
+    "extract": "node cli.js extract",
+    "create": "node cli.js create"
+  },
+  "keywords": [
+    "cosmos-db",
+    "azure",
+    "migration",
+    "emulator"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/cosmos": "^4.0.0",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1"
+  }
+}
