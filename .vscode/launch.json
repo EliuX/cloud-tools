@@ -236,6 +236,26 @@
         "!**/node_modules/**"
       ],
       "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage Sync Queues",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "sync-queues",
+        "--preserve-destination-queues"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
     }
   ]
 }

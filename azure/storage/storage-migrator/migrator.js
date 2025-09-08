@@ -3,6 +3,7 @@
  */
 
 import { BlobMigrator } from './blob-migrator.js';
+import { QueueMigrator } from './queue-migrator.js';
 import { StorageConfig } from './config.js';
 import chalk from 'chalk';
 
@@ -18,7 +19,11 @@ export class StorageMigrator {
             this.blobMigrator = new BlobMigrator(sourceOptions, destinationOptions, config);
         }
         
-        // TODO: Add other service migrators (Files, Queues, Tables) in future iterations
+        if (config.includeQueues) {
+            this.queueMigrator = new QueueMigrator(sourceOptions, destinationOptions, config);
+        }
+        
+        // TODO: Add other service migrators (Files, Tables) in future iterations
     }
     
     /**
@@ -61,14 +66,24 @@ export class StorageMigrator {
                 console.log(chalk.green(`✅ Blob migration completed: ${blobResults.migratedBlobs}/${blobResults.totalBlobs} blobs migrated`));
             }
             
+            // Migrate Queue Storage
+            if (this.config.includeQueues && this.queueMigrator) {
+                console.log(chalk.yellow('\n📬 Synchronizing Queue Storage...'));
+                const queueResults = await this.queueMigrator.synchronizeQueues();
+                
+                results.services.queues = queueResults;
+                results.totalItems += queueResults.totalSourceQueues;
+                results.migratedItems += queueResults.createdQueues + queueResults.updatedQueues;
+                results.skippedItems += queueResults.skippedQueues;
+                results.failedItems += queueResults.errors.length;
+                results.errors.push(...queueResults.errors);
+                
+                console.log(chalk.green(`✅ Queue synchronization completed: ${queueResults.createdQueues} created, ${queueResults.updatedQueues} updated, ${queueResults.deletedQueues} deleted`));
+            }
+            
             // TODO: Add File Share migration
             if (this.config.includeFiles) {
                 console.log(chalk.yellow('\n📁 File Share migration not yet implemented'));
-            }
-            
-            // TODO: Add Queue migration
-            if (this.config.includeQueues) {
-                console.log(chalk.yellow('\n📬 Queue migration not yet implemented'));
             }
             
             // TODO: Add Table migration
@@ -112,6 +127,21 @@ export class StorageMigrator {
                 } else {
                     containers.forEach((container, index) => {
                         console.log(`  ${index + 1}. ${container.name} (Last Modified: ${container.lastModified})`);
+                    });
+                }
+            }
+            
+            // List Queues
+            if (this.config.includeQueues && this.queueMigrator) {
+                console.log(chalk.yellow('\n📬 Storage Queues:'));
+                const queues = await this.queueMigrator.listSourceQueues();
+                services.queues = queues;
+                
+                if (queues.length === 0) {
+                    console.log(chalk.gray('  No queues found'));
+                } else {
+                    queues.forEach((queue, index) => {
+                        console.log(`  ${index + 1}. ${queue.name} (Messages: ~${queue.approximateMessagesCount})`);
                     });
                 }
             }
@@ -211,6 +241,15 @@ export class StorageMigrator {
             console.log(chalk.blue('\n📦 Blob Storage:'));
             console.log(chalk.blue(`  Containers: ${blobs.migratedContainers}/${blobs.totalContainers}`));
             console.log(chalk.blue(`  Blobs: ${blobs.migratedBlobs}/${blobs.totalBlobs}`));
+        }
+        
+        if (results.services.queues) {
+            const queues = results.services.queues;
+            console.log(chalk.blue('\n📬 Queue Storage:'));
+            console.log(chalk.blue(`  Created: ${queues.createdQueues}`));
+            console.log(chalk.blue(`  Updated: ${queues.updatedQueues}`));
+            console.log(chalk.blue(`  Deleted: ${queues.deletedQueues}`));
+            console.log(chalk.blue(`  Skipped: ${queues.skippedQueues}`));
         }
         
         if (results.errors.length > 0) {

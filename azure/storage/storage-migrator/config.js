@@ -42,6 +42,9 @@ export class StorageConfig {
         this.containerFilter = options.containerFilter || process.env.CONTAINER_FILTER || '';
         this.blobPrefix = options.blobPrefix || process.env.BLOB_PREFIX || '';
         this.excludePatterns = options.excludePatterns || (process.env.EXCLUDE_PATTERNS ? process.env.EXCLUDE_PATTERNS.split(',') : []);
+        
+        // Queue-specific options
+        this.preserveDestinationQueues = options.preserveDestinationQueues || process.env.PRESERVE_DESTINATION_QUEUES === 'true' || false;
     }
     
     /**

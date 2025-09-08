@@ -32,6 +32,7 @@ program
     .option('--include-files', 'Include file share migration')
     .option('--include-queues', 'Include queue migration')
     .option('--include-tables', 'Include table migration')
+    .option('--preserve-destination-queues', 'Preserve queues that exist only in destination')
     .option('--overwrite', 'Overwrite existing items in destination')
     .option('--skip-existing', 'Skip items that already exist in destination')
     .option('--continue-on-error', 'Continue migration even if some items fail (default: true)')
@@ -198,6 +199,60 @@ program
         } catch (error) {
             spinner.stop();
             console.error(chalk.red(`\n❌ Container copy failed: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('sync-queues')
+    .description('Synchronize queues from source to destination (create, update, delete as needed)')
+    .option('-s, --source-connection-string <string>', 'Source storage account connection string')
+    .option('--source-account-name <name>', 'Source storage account name')
+    .option('--source-account-key <key>', 'Source storage account key')
+    .option('--source-sas-token <token>', 'Source storage account SAS token')
+    .option('-d, --destination-connection-string <string>', 'Destination storage account connection string')
+    .option('--destination-account-name <name>', 'Destination storage account name')
+    .option('--destination-account-key <key>', 'Destination storage account key')
+    .option('--destination-sas-token <token>', 'Destination storage account SAS token')
+    .option('--preserve-destination-queues', 'Preserve queues that exist only in destination')
+    .option('--preserve-metadata', 'Preserve queue metadata (default: true)', true)
+    .option('--continue-on-error', 'Continue synchronization even if some queues fail (default: true)')
+    .option('--max-retries <retries>', 'Maximum retry attempts for failed operations (default: 3)', parseInt)
+    .action(async (options) => {
+        const spinner = ora('Initializing queue synchronization...').start();
+        
+        try {
+            const config = new StorageConfig({
+                sourceConnectionString: options.sourceConnectionString,
+                sourceAccountName: options.sourceAccountName,
+                sourceAccountKey: options.sourceAccountKey,
+                sourceSasToken: options.sourceSasToken,
+                destinationConnectionString: options.destinationConnectionString,
+                destinationAccountName: options.destinationAccountName,
+                destinationAccountKey: options.destinationAccountKey,
+                destinationSasToken: options.destinationSasToken,
+                includeQueues: true, // Always include queues for sync
+                preserveDestinationQueues: options.preserveDestinationQueues,
+                preserveMetadata: options.preserveMetadata,
+                continueOnError: options.continueOnError !== false,
+                maxRetries: options.maxRetries
+            });
+            
+            spinner.stop();
+            
+            const migrator = new StorageMigrator(config);
+            const result = await migrator.queueMigrator.synchronizeQueues();
+            
+            console.log(chalk.green('\n🎉 Queue synchronization completed!'));
+            console.log(chalk.blue(`Created: ${result.createdQueues}, Updated: ${result.updatedQueues}, Deleted: ${result.deletedQueues}`));
+            
+            if (result.errors.length > 0) {
+                console.log(chalk.yellow(`\n⚠️  ${result.errors.length} errors encountered`));
+            }
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Queue synchronization failed: ${error.message}`));
             process.exit(1);
         }
     });
