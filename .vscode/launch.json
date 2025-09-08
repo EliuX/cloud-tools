@@ -256,6 +256,26 @@
         "!**/node_modules/**"
       ],
       "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
+    },
+    {
+      "name": "Debug: Storage Compare Accounts",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
+      "args": [
+        "compare",
+        "--include-queues"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/storage/storage-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/storage/storage-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
     }
   ]
 }

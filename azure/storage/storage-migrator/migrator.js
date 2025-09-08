@@ -4,6 +4,7 @@
 
 import { BlobMigrator } from './blob-migrator.js';
 import { QueueMigrator } from './queue-migrator.js';
+import { StorageComparer } from './storage-comparer.js';
 import { StorageConfig } from './config.js';
 import chalk from 'chalk';
 
@@ -23,6 +24,9 @@ export class StorageMigrator {
             this.queueMigrator = new QueueMigrator(sourceOptions, destinationOptions, config);
         }
         
+        // Initialize comparer for analysis
+        this.comparer = new StorageComparer(sourceOptions, destinationOptions, config);
+        
         // TODO: Add other service migrators (Files, Tables) in future iterations
     }
     
@@ -37,6 +41,19 @@ export class StorageMigrator {
         try {
             // Validate configuration
             this.config.validate();
+            
+            // Optional: Show comparison before migration if requested
+            if (this.config.showComparisonBeforeMigration) {
+                console.log(chalk.yellow('\n🔍 Pre-migration analysis...'));
+                const comparison = await this.comparer.compareStorageAccounts();
+                
+                if (comparison.summary.totalDifferences > 0) {
+                    console.log(chalk.blue(`Found ${comparison.summary.totalDifferences} differences. Proceeding with migration...`));
+                } else {
+                    console.log(chalk.green('No differences found. Storage accounts are already synchronized.'));
+                    return { success: true, message: 'No migration needed - accounts are synchronized' };
+                }
+            }
             
             const results = {
                 success: true,
@@ -216,6 +233,26 @@ export class StorageMigrator {
             
         } catch (error) {
             console.error(chalk.red(`❌ Container copy failed: ${error.message}`));
+            throw error;
+        }
+    }
+    
+    /**
+     * Compare storage accounts and generate difference report
+     */
+    async compareStorageAccounts() {
+        try {
+            this.config.validate();
+            
+            const comparison = await this.comparer.compareStorageAccounts();
+            const report = this.comparer.generateReport(comparison);
+            
+            console.log(report);
+            
+            return comparison;
+            
+        } catch (error) {
+            console.error(chalk.red(`❌ Storage account comparison failed: ${error.message}`));
             throw error;
         }
     }

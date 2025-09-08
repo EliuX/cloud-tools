@@ -258,6 +258,66 @@ program
     });
 
 program
+    .command('compare')
+    .description('Compare source and destination storage accounts and generate difference report')
+    .option('-s, --source-connection-string <string>', 'Source storage account connection string')
+    .option('--source-account-name <name>', 'Source storage account name')
+    .option('--source-account-key <key>', 'Source storage account key')
+    .option('--source-sas-token <token>', 'Source storage account SAS token')
+    .option('-d, --destination-connection-string <string>', 'Destination storage account connection string')
+    .option('--destination-account-name <name>', 'Destination storage account name')
+    .option('--destination-account-key <key>', 'Destination storage account key')
+    .option('--destination-sas-token <token>', 'Destination storage account SAS token')
+    .option('--include-blobs', 'Compare blob containers (default: true)', true)
+    .option('--include-queues', 'Compare queues')
+    .option('--include-files', 'Compare file shares')
+    .option('--include-tables', 'Compare tables')
+    .option('--preserve-destination-queues', 'Consider preservation of destination-only queues in recommendations')
+    .option('--output <file>', 'Save comparison report to file')
+    .action(async (options) => {
+        const spinner = ora('Analyzing storage account differences...').start();
+        
+        try {
+            const config = new StorageConfig({
+                sourceConnectionString: options.sourceConnectionString,
+                sourceAccountName: options.sourceAccountName,
+                sourceAccountKey: options.sourceAccountKey,
+                sourceSasToken: options.sourceSasToken,
+                destinationConnectionString: options.destinationConnectionString,
+                destinationAccountName: options.destinationAccountName,
+                destinationAccountKey: options.destinationAccountKey,
+                destinationSasToken: options.destinationSasToken,
+                includeBlobs: options.includeBlobs,
+                includeQueues: options.includeQueues,
+                includeFiles: options.includeFiles,
+                includeTables: options.includeTables,
+                preserveDestinationQueues: options.preserveDestinationQueues
+            });
+            
+            spinner.stop();
+            
+            const migrator = new StorageMigrator(config);
+            const comparison = await migrator.compareStorageAccounts();
+            
+            // Save to file if requested
+            if (options.output) {
+                const fs = await import('fs');
+                const report = migrator.comparer.generateReport(comparison);
+                fs.writeFileSync(options.output, report);
+                console.log(chalk.green(`\n📄 Report saved to: ${options.output}`));
+            }
+            
+            console.log(chalk.green('\n🎉 Storage account comparison completed!'));
+            console.log(chalk.blue(`Total differences found: ${comparison.summary.totalDifferences}`));
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Storage account comparison failed: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
     .command('validate')
     .description('Validate storage account credentials and connectivity')
     .option('-s, --source-connection-string <string>', 'Source storage account connection string')
