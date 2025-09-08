@@ -264,8 +264,6 @@
       "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
       "args": [
         "compare",
-        "--source-connection-string", "DefaultEndpointsProtocol=https;AccountName=sourceaccount;AccountKey=sourcekey;EndpointSuffix=core.windows.net",
-        "--destination-connection-string", "DefaultEndpointsProtocol=https;AccountName=destaccount;AccountKey=destkey;EndpointSuffix=core.windows.net",
         "--include-services", "blobs,queues",
         "--output-file", "comparison-report.json"
       ],
@@ -279,8 +277,6 @@
       "program": "${workspaceFolder}/azure/storage/storage-migrator/cli.js",
       "args": [
         "sync-containers",
-        "--source-connection-string", "DefaultEndpointsProtocol=https;AccountName=sourceaccount;AccountKey=sourcekey;EndpointSuffix=core.windows.net",
-        "--destination-connection-string", "DefaultEndpointsProtocol=https;AccountName=destaccount;AccountKey=destkey;EndpointSuffix=core.windows.net",
         "--preserve-destination-containers",
         "--preserve-metadata"
       ],
