@@ -37,15 +37,19 @@ Copy the `.env.example` file to `.env` and configure your storage account creden
 cp .env.example .env
 ```
 
-Edit the `.env` file with your storage account details:
+**IMPORTANT**: You must provide valid Azure Storage credentials. The tool will fail if credentials are missing or invalid - no default values are used.
+
+Edit the `.env` file with your actual storage account details:
 
 ```env
 # Source Storage Account
-SOURCE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=source;AccountKey=key;EndpointSuffix=core.windows.net
+SOURCE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=yoursource;AccountKey=actualkey;EndpointSuffix=core.windows.net
 
 # Destination Storage Account  
-DESTINATION_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=destination;AccountKey=key;EndpointSuffix=core.windows.net
+DESTINATION_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=yourdest;AccountKey=actualkey;EndpointSuffix=core.windows.net
 ```
+
+**Note**: Replace `yoursource`, `yourdest`, and `actualkey` with your real Azure Storage account names and keys.
 
 ### Authentication Options
 

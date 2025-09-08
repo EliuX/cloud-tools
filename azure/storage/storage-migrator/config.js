@@ -9,16 +9,16 @@ dotenv.config();
 export class StorageConfig {
     constructor(options = {}) {
         // Source Storage Account
-        this.sourceConnectionString = options.sourceConnectionString || process.env.SOURCE_STORAGE_CONNECTION_STRING || '';
-        this.sourceAccountName = options.sourceAccountName || process.env.SOURCE_STORAGE_ACCOUNT_NAME || '';
-        this.sourceAccountKey = options.sourceAccountKey || process.env.SOURCE_STORAGE_ACCOUNT_KEY || '';
-        this.sourceSasToken = options.sourceSasToken || process.env.SOURCE_STORAGE_SAS_TOKEN || '';
+        this.sourceConnectionString = options.sourceConnectionString || process.env.SOURCE_STORAGE_CONNECTION_STRING;
+        this.sourceAccountName = options.sourceAccountName || process.env.SOURCE_STORAGE_ACCOUNT_NAME;
+        this.sourceAccountKey = options.sourceAccountKey || process.env.SOURCE_STORAGE_ACCOUNT_KEY;
+        this.sourceSasToken = options.sourceSasToken || process.env.SOURCE_STORAGE_SAS_TOKEN;
         
         // Destination Storage Account
-        this.destinationConnectionString = options.destinationConnectionString || process.env.DESTINATION_STORAGE_CONNECTION_STRING || '';
-        this.destinationAccountName = options.destinationAccountName || process.env.DESTINATION_STORAGE_ACCOUNT_NAME || '';
-        this.destinationAccountKey = options.destinationAccountKey || process.env.DESTINATION_STORAGE_ACCOUNT_KEY || '';
-        this.destinationSasToken = options.destinationSasToken || process.env.DESTINATION_STORAGE_SAS_TOKEN || '';
+        this.destinationConnectionString = options.destinationConnectionString || process.env.DESTINATION_STORAGE_CONNECTION_STRING;
+        this.destinationAccountName = options.destinationAccountName || process.env.DESTINATION_STORAGE_ACCOUNT_NAME;
+        this.destinationAccountKey = options.destinationAccountKey || process.env.DESTINATION_STORAGE_ACCOUNT_KEY;
+        this.destinationSasToken = options.destinationSasToken || process.env.DESTINATION_STORAGE_SAS_TOKEN;
         
         // Migration options
         this.includeBlobs = options.includeBlobs !== false; // Default to true
@@ -66,12 +66,18 @@ export class StorageConfig {
         
         // Validate source storage account
         if (!this.sourceConnectionString && (!this.sourceAccountName || (!this.sourceAccountKey && !this.sourceSasToken))) {
-            errors.push('Source storage account credentials are required (connection string OR account name + key/SAS token)');
+            errors.push('Source storage account credentials are required. Provide either:');
+            errors.push('  - SOURCE_STORAGE_CONNECTION_STRING environment variable or --source-connection-string option');
+            errors.push('  - SOURCE_STORAGE_ACCOUNT_NAME + (SOURCE_STORAGE_ACCOUNT_KEY or SOURCE_STORAGE_SAS_TOKEN) environment variables');
+            errors.push('  - --source-account-name + (--source-account-key or --source-sas-token) options');
         }
         
         // Validate destination storage account
         if (!this.destinationConnectionString && (!this.destinationAccountName || (!this.destinationAccountKey && !this.destinationSasToken))) {
-            errors.push('Destination storage account credentials are required (connection string OR account name + key/SAS token)');
+            errors.push('Destination storage account credentials are required. Provide either:');
+            errors.push('  - DESTINATION_STORAGE_CONNECTION_STRING environment variable or --destination-connection-string option');
+            errors.push('  - DESTINATION_STORAGE_ACCOUNT_NAME + (DESTINATION_STORAGE_ACCOUNT_KEY or DESTINATION_STORAGE_SAS_TOKEN) environment variables');
+            errors.push('  - --destination-account-name + (--destination-account-key or --destination-sas-token) options');
         }
         
         // Validate at least one service type is selected
