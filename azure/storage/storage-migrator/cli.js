@@ -297,6 +297,12 @@ program
             spinner.stop();
             
             const migrator = new StorageMigrator(config);
+            
+            // Check if blobMigrator exists
+            if (!migrator.blobMigrator) {
+                throw new Error('Blob migrator not initialized. Check your configuration and credentials.');
+            }
+            
             const result = await migrator.blobMigrator.synchronizeContainers();
             
             console.log(chalk.green('\n🎉 Container synchronization completed!'));
@@ -324,16 +330,31 @@ program
     .option('--destination-account-name <name>', 'Destination storage account name')
     .option('--destination-account-key <key>', 'Destination storage account key')
     .option('--destination-sas-token <token>', 'Destination storage account SAS token')
+    .option('--include-services <services>', 'Comma-separated list of services to compare (blobs,queues,files,tables)', 'blobs')
     .option('--include-blobs', 'Compare blob containers (default: true)', true)
     .option('--include-queues', 'Compare queues')
     .option('--include-files', 'Compare file shares')
     .option('--include-tables', 'Compare tables')
     .option('--preserve-destination-queues', 'Consider preservation of destination-only queues in recommendations')
-    .option('--output <file>', 'Save comparison report to file')
+    .option('--output-file <file>', 'Save comparison report to file')
     .action(async (options) => {
         const spinner = ora('Analyzing storage account differences...').start();
         
         try {
+            // Parse include-services option
+            let includeBlobs = options.includeBlobs;
+            let includeQueues = options.includeQueues;
+            let includeFiles = options.includeFiles;
+            let includeTables = options.includeTables;
+            
+            if (options.includeServices) {
+                const services = options.includeServices.toLowerCase().split(',').map(s => s.trim());
+                includeBlobs = services.includes('blobs');
+                includeQueues = services.includes('queues');
+                includeFiles = services.includes('files');
+                includeTables = services.includes('tables');
+            }
+            
             const config = new StorageConfig({
                 sourceConnectionString: options.sourceConnectionString,
                 sourceAccountName: options.sourceAccountName,
@@ -343,10 +364,10 @@ program
                 destinationAccountName: options.destinationAccountName,
                 destinationAccountKey: options.destinationAccountKey,
                 destinationSasToken: options.destinationSasToken,
-                includeBlobs: options.includeBlobs,
-                includeQueues: options.includeQueues,
-                includeFiles: options.includeFiles,
-                includeTables: options.includeTables,
+                includeBlobs: includeBlobs,
+                includeQueues: includeQueues,
+                includeFiles: includeFiles,
+                includeTables: includeTables,
                 preserveDestinationQueues: options.preserveDestinationQueues
             });
             
@@ -356,11 +377,11 @@ program
             const comparison = await migrator.compareStorageAccounts();
             
             // Save to file if requested
-            if (options.output) {
+            if (options.outputFile) {
                 const fs = await import('fs');
                 const report = migrator.comparer.generateReport(comparison);
-                fs.writeFileSync(options.output, report);
-                console.log(chalk.green(`\n📄 Report saved to: ${options.output}`));
+                fs.writeFileSync(options.outputFile, report);
+                console.log(chalk.green(`\n📄 Report saved to: ${options.outputFile}`));
             }
             
             console.log(chalk.green('\n🎉 Storage account comparison completed!'));
