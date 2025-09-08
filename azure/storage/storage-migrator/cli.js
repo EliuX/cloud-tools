@@ -33,6 +33,8 @@ program
     .option('--include-queues', 'Include queue migration')
     .option('--include-tables', 'Include table migration')
     .option('--preserve-destination-queues', 'Preserve queues that exist only in destination')
+    .option('--preserve-destination-containers', 'Preserve containers that exist only in destination')
+    .option('--synchronize-containers', 'Synchronize containers before migrating blobs')
     .option('--overwrite', 'Overwrite existing items in destination')
     .option('--skip-existing', 'Skip items that already exist in destination')
     .option('--continue-on-error', 'Continue migration even if some items fail (default: true)')
@@ -253,6 +255,60 @@ program
         } catch (error) {
             spinner.stop();
             console.error(chalk.red(`\n❌ Queue synchronization failed: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('sync-containers')
+    .description('Synchronize containers from source to destination (create, update, delete as needed)')
+    .option('-s, --source-connection-string <string>', 'Source storage account connection string')
+    .option('--source-account-name <name>', 'Source storage account name')
+    .option('--source-account-key <key>', 'Source storage account key')
+    .option('--source-sas-token <token>', 'Source storage account SAS token')
+    .option('-d, --destination-connection-string <string>', 'Destination storage account connection string')
+    .option('--destination-account-name <name>', 'Destination storage account name')
+    .option('--destination-account-key <key>', 'Destination storage account key')
+    .option('--destination-sas-token <token>', 'Destination storage account SAS token')
+    .option('--preserve-destination-containers', 'Preserve containers that exist only in destination')
+    .option('--preserve-metadata', 'Preserve container metadata (default: true)', true)
+    .option('--continue-on-error', 'Continue synchronization even if some containers fail (default: true)')
+    .option('--max-retries <retries>', 'Maximum retry attempts for failed operations (default: 3)', parseInt)
+    .action(async (options) => {
+        const spinner = ora('Initializing container synchronization...').start();
+        
+        try {
+            const config = new StorageConfig({
+                sourceConnectionString: options.sourceConnectionString,
+                sourceAccountName: options.sourceAccountName,
+                sourceAccountKey: options.sourceAccountKey,
+                sourceSasToken: options.sourceSasToken,
+                destinationConnectionString: options.destinationConnectionString,
+                destinationAccountName: options.destinationAccountName,
+                destinationAccountKey: options.destinationAccountKey,
+                destinationSasToken: options.destinationSasToken,
+                includeBlobs: true, // Always include blobs for container sync
+                preserveDestinationContainers: options.preserveDestinationContainers,
+                preserveMetadata: options.preserveMetadata,
+                continueOnError: options.continueOnError !== false,
+                maxRetries: options.maxRetries
+            });
+            
+            spinner.stop();
+            
+            const migrator = new StorageMigrator(config);
+            const result = await migrator.blobMigrator.synchronizeContainers();
+            
+            console.log(chalk.green('\n🎉 Container synchronization completed!'));
+            console.log(chalk.blue(`Created: ${result.createdContainers}, Updated: ${result.updatedContainers}, Deleted: ${result.deletedContainers}`));
+            
+            if (result.errors.length > 0) {
+                console.log(chalk.yellow(`\n⚠️  ${result.errors.length} errors encountered`));
+            }
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Container synchronization failed: ${error.message}`));
             process.exit(1);
         }
     });
