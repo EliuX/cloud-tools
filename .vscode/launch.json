@@ -141,6 +141,68 @@
       "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
     },
     {
+      "name": "Debug: Cosmos Extract Scripts",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
+      "args": [
+        "extract-scripts",
+        "--output", "debug-scripts.json"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
+      "name": "Debug: Cosmos Create Scripts",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
+      "args": [
+        "create-scripts",
+        "debug-scripts.json",
+        "--overwrite"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
+      "name": "Debug: Cosmos Extract Scripts (Specific Container)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
+      "args": [
+        "extract-scripts",
+        "--container", "MyContainer",
+        "--output", "container-scripts.json"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
+        "!**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
+    },
+    {
       "name": "Debug: Storage Migration (Full)",
       "type": "node",
       "request": "launch",
@@ -282,68 +344,6 @@
       ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/azure/storage/storage-migrator"
-    },
-    {
-      "name": "Debug: Cosmos Extract Scripts",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
-      "args": [
-        "extract-scripts",
-        "--output", "debug-scripts.json"
-      ],
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
-        "!**/node_modules/**"
-      ],
-      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
-    },
-    {
-      "name": "Debug: Cosmos Create Scripts",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
-      "args": [
-        "create-scripts",
-        "debug-scripts.json",
-        "--overwrite"
-      ],
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
-        "!**/node_modules/**"
-      ],
-      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
-    },
-    {
-      "name": "Debug: Cosmos Extract Scripts (Specific Container)",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/cli.js",
-      "args": [
-        "extract-scripts",
-        "--container", "MyContainer",
-        "--output", "container-scripts.json"
-      ],
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/.env",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/azure/cosmosdb/cosmos-migrator/**",
-        "!**/node_modules/**"
-      ],
-      "cwd": "${workspaceFolder}/azure/cosmosdb/cosmos-migrator"
     }
   ]
 }
