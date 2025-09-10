@@ -119,9 +119,8 @@ export class BlobMigrator {
         
         // Create destination container if it doesn't exist
         try {
-            await destinationContainer.createIfNotExists({
-                access: 'private' // Default to private, will be updated later
-            });
+            // Create container without public access (private by default)
+            await destinationContainer.createIfNotExists();
         } catch (error) {
             throw new Error(`Failed to create destination container ${containerName}: ${error.message}`);
         }
@@ -376,9 +375,12 @@ export class BlobMigrator {
                     const destinationContainer = this.destinationClient.getContainerClient(container.name);
                     
                     // Create the container
-                    await destinationContainer.create({
-                        access: container.publicAccess || 'private'
-                    });
+                    const createOptions = {};
+                    if (container.publicAccess && container.publicAccess !== 'none') {
+                        createOptions.access = container.publicAccess;
+                    }
+                    // If no public access or 'none', create private container (no access option)
+                    await destinationContainer.create(createOptions);
                     
                     // Set metadata if present and preservation is enabled
                     if (this.config.preserveMetadata && container.metadata && Object.keys(container.metadata).length > 0) {
