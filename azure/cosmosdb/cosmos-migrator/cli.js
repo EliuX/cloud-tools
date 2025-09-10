@@ -28,6 +28,7 @@ program
     .option('--emulator-database <database>', 'Emulator database name (default: same as Azure)')
     .option('--overwrite', 'Overwrite existing database/containers')
     .option('--include-data', 'Include data migration')
+    .option('--include-scripts', 'Include User Defined Functions, Stored Procedures, and Triggers migration (default: true)')
     .option('--skip-existing', 'Skip documents that already exist in target')
     .option('--continue-on-error', 'Continue migration even if some documents fail (default: true)')
     .action(async (options) => {
@@ -43,6 +44,7 @@ program
                 emulatorDatabaseName: options.emulatorDatabase,
                 overwrite: options.overwrite,
                 includeData: options.includeData,
+                includeScripts: options.includeScripts !== false,
                 skipExisting: options.skipExisting,
                 continueOnError: options.continueOnError !== false
             });
@@ -207,6 +209,79 @@ program
         } catch (error) {
             spinner.stop();
             console.error(chalk.red(`\n❌ Failed to list databases: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('extract-scripts')
+    .description('Extract only User Defined Functions, Stored Procedures, and Triggers from Azure Cosmos DB')
+    .option('-e, --azure-endpoint <endpoint>', 'Azure Cosmos DB endpoint')
+    .option('-k, --azure-key <key>', 'Azure Cosmos DB key')
+    .option('-d, --azure-database <database>', 'Azure Cosmos DB database name')
+    .option('-c, --container <container>', 'Specific container name (optional, extracts from all containers if not specified)')
+    .option('-o, --output <file>', 'Output file name')
+    .action(async (options) => {
+        const spinner = ora('Extracting scripts...').start();
+        
+        try {
+            const config = new CosmosConfig({
+                azureEndpoint: options.azureEndpoint,
+                azureKey: options.azureKey,
+                azureDatabaseName: options.azureDatabase
+            });
+            
+            spinner.stop();
+            
+            const migrator = new CosmosMigrator(config);
+            const result = await migrator.extractScripts(options.container, options.output);
+            
+            console.log(chalk.green('\n✅ Scripts extracted successfully!'));
+            console.log(chalk.blue(`Scripts file: ${result.scriptsFile}`));
+            console.log(chalk.blue(`Total UDFs: ${result.stats.totalUDFs}`));
+            console.log(chalk.blue(`Total Stored Procedures: ${result.stats.totalStoredProcedures}`));
+            console.log(chalk.blue(`Total Triggers: ${result.stats.totalTriggers}`));
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Script extraction failed: ${error.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('create-scripts')
+    .description('Create User Defined Functions, Stored Procedures, and Triggers in emulator from JSON file')
+    .argument('<scripts-file>', 'Scripts JSON file')
+    .option('--emulator-endpoint <endpoint>', 'Emulator endpoint (default: https://localhost:8081)')
+    .option('--emulator-key <key>', 'Emulator key (default: emulator default key)')
+    .option('--emulator-database <database>', 'Emulator database name')
+    .option('--container <container>', 'Specific container name (optional, creates in all containers if not specified)')
+    .option('--overwrite', 'Overwrite existing scripts')
+    .action(async (scriptsFile, options) => {
+        const spinner = ora('Creating scripts...').start();
+        
+        try {
+            const config = new CosmosConfig({
+                emulatorEndpoint: options.emulatorEndpoint,
+                emulatorKey: options.emulatorKey,
+                emulatorDatabaseName: options.emulatorDatabase,
+                overwrite: options.overwrite
+            });
+            
+            spinner.stop();
+            
+            const migrator = new CosmosMigrator(config);
+            const result = await migrator.createScriptsFromFile(scriptsFile, options.container);
+            
+            console.log(chalk.green('\n✅ Scripts created successfully!'));
+            console.log(chalk.blue(`Created UDFs: ${result.stats.createdUDFs}`));
+            console.log(chalk.blue(`Created Stored Procedures: ${result.stats.createdStoredProcedures}`));
+            console.log(chalk.blue(`Created Triggers: ${result.stats.createdTriggers}`));
+            
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red(`\n❌ Script creation failed: ${error.message}`));
             process.exit(1);
         }
     });

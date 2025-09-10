@@ -6,8 +6,9 @@ A Node.js tool to migrate Cosmos DB database schemas from Azure to a local Cosmo
 
 - **Schema Extraction**: Extract complete database schema from Azure Cosmos DB
 - **Schema Creation**: Recreate schema structure in local Cosmos DB emulator
+- **Script Migration**: Extract and migrate User Defined Functions, Stored Procedures, and Triggers
 - **Data Migration**: Migrate documents with error resilience and batch processing
-- **Full Migration**: End-to-end migration from Azure to emulator (schema + data)
+- **Full Migration**: End-to-end migration from Azure to emulator (schema + data + scripts)
 - **Error Resilience**: Continue migration even when individual operations fail
 - **Verification**: Verify that migration completed successfully
 - **CLI Interface**: Easy-to-use command line interface
@@ -49,21 +50,30 @@ Migrate schema from Azure to local emulator:
 node cli.js migrate
 ```
 
-### Complete Migration (Schema + Data)
+### Complete Migration (Schema + Data + Scripts)
 
-Migrate both schema and data from Azure to local emulator:
+Migrate schema, data, and scripts (UDFs, stored procedures, triggers) from Azure to local emulator:
 
 ```bash
-node cli.js migrate --include-data --overwrite
+node cli.js migrate --include-data --include-scripts --overwrite
 ```
 
 With additional options:
 ```bash
 node cli.js migrate \
   --include-data \
+  --include-scripts \
   --skip-existing \
   --overwrite \
   --batch-size 50
+```
+
+### Migration without Scripts
+
+To migrate without User Defined Functions, Stored Procedures, and Triggers:
+
+```bash
+node cli.js migrate --include-data --no-include-scripts --overwrite
 ```
 
 ### Extract Schema Only
@@ -98,6 +108,32 @@ node cli.js migrate-data \
   --max-retries 5
 ```
 
+### Extract Scripts Only
+
+Extract only User Defined Functions, Stored Procedures, and Triggers from Azure:
+
+```bash
+node cli.js extract-scripts --output my-scripts.json
+```
+
+Extract scripts from a specific container:
+```bash
+node cli.js extract-scripts --container MyContainer --output container-scripts.json
+```
+
+### Create Scripts from File
+
+Create User Defined Functions, Stored Procedures, and Triggers in emulator from JSON file:
+
+```bash
+node cli.js create-scripts my-scripts.json --overwrite
+```
+
+Create scripts in a specific container:
+```bash
+node cli.js create-scripts my-scripts.json --container MyContainer --overwrite
+```
+
 ### List Available Databases
 
 List all databases in your Azure Cosmos DB account:
@@ -120,6 +156,7 @@ Perform complete migration from Azure to emulator.
 - `--emulator-database <database>` - Emulator database name (default: same as Azure)
 - `--overwrite` - Overwrite existing database/containers
 - `--include-data` - Include data migration
+- `--include-scripts` - Include User Defined Functions, Stored Procedures, and Triggers migration (default: true)
 - `--skip-existing` - Skip documents that already exist in target
 - `--continue-on-error` - Continue migration even if some documents fail (default: true)
 
@@ -157,6 +194,29 @@ Migrate data only (schema must already exist in target).
 - `--skip-existing` - Skip documents that already exist in target
 - `--batch-size <size>` - Batch size for data migration (default: 100)
 - `--max-retries <retries>` - Maximum retry attempts for failed operations (default: 3)
+
+### `extract-scripts`
+Extract only User Defined Functions, Stored Procedures, and Triggers from Azure Cosmos DB.
+
+**Options:**
+- `-e, --azure-endpoint <endpoint>` - Azure Cosmos DB endpoint
+- `-k, --azure-key <key>` - Azure Cosmos DB key
+- `-d, --azure-database <database>` - Azure database name
+- `-c, --container <container>` - Specific container name (optional, extracts from all containers if not specified)
+- `-o, --output <file>` - Output file name
+
+### `create-scripts`
+Create User Defined Functions, Stored Procedures, and Triggers in emulator from JSON file.
+
+**Arguments:**
+- `<scripts-file>` - Path to scripts JSON file
+
+**Options:**
+- `--emulator-endpoint <endpoint>` - Emulator endpoint (default: https://localhost:8081)
+- `--emulator-key <key>` - Emulator key (default: emulator default)
+- `--emulator-database <database>` - Emulator database name
+- `--container <container>` - Specific container name (optional, creates in all containers if not specified)
+- `--overwrite` - Overwrite existing scripts
 
 ### `list`
 List available databases in Azure Cosmos DB.
@@ -234,6 +294,9 @@ The tool extracts and recreates the following schema elements:
 - Conflict resolution policy
 - Analytical storage TTL
 - Default TTL
+- User Defined Functions (UDFs)
+- Stored Procedures
+- Triggers
 
 ### Example Schema JSON
 
@@ -256,7 +319,27 @@ The tool extracts and recreates the following schema elements:
       "uniqueKeyPolicy": null,
       "conflictResolutionPolicy": null,
       "analyticalStorageTtl": null,
-      "defaultTtl": null
+      "defaultTtl": null,
+      "userDefinedFunctions": [
+        {
+          "id": "myUDF",
+          "body": "function myUDF(input) { return input.toUpperCase(); }"
+        }
+      ],
+      "storedProcedures": [
+        {
+          "id": "myStoredProc",
+          "body": "function myStoredProc() { var context = getContext(); }"
+        }
+      ],
+      "triggers": [
+        {
+          "id": "myTrigger",
+          "body": "function myTrigger() { var context = getContext(); }",
+          "triggerOperation": "Create",
+          "triggerType": "Pre"
+        }
+      ]
     }
   ]
 }
@@ -291,7 +374,10 @@ This project includes VS Code debugging configurations to help you debug migrati
 4. **Debug: Cosmos List Databases** - Debug the database listing functionality
 5. **Debug: Cosmos Migration with Data** - Debug full migration including data migration
 6. **Debug: Cosmos Data Migration Only** - Debug data-only migration with batch processing
-7. **Debug: Cosmos Custom Arguments** - Debug with custom command-line arguments
+7. **Debug: Cosmos Extract Scripts** - Debug User Defined Functions, Stored Procedures, and Triggers extraction
+8. **Debug: Cosmos Create Scripts** - Debug script creation in the emulator from a JSON file
+9. **Debug: Cosmos Extract Scripts (Specific Container)** - Debug script extraction from a specific container
+10. **Debug: Cosmos Custom Arguments** - Debug with custom command-line arguments
 
 #### Prerequisites for Debugging
 
@@ -416,10 +502,10 @@ Success Rate: 99.0%
 
 ## Limitations
 
-- Stored procedures, triggers, and UDFs are not migrated
 - Some advanced indexing configurations may need manual adjustment
 - Cross-region replication settings are not applicable to emulator
 - Large documents (>2MB) may require special handling
+- Complex trigger dependencies may require manual ordering during migration
 
 ## Contributing
 

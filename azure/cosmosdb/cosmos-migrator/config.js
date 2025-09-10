@@ -20,6 +20,7 @@ export class CosmosConfig {
         
         // Migration options
         this.includeData = options.includeData || process.env.INCLUDE_DATA === 'true' || false;
+        this.includeScripts = options.includeScripts !== false; // Default to true
         this.batchSize = parseInt(options.batchSize || process.env.BATCH_SIZE || '100');
         this.maxRetries = parseInt(options.maxRetries || process.env.MAX_RETRIES || '3');
         this.overwrite = options.overwrite || process.env.OVERWRITE === 'true' || false;

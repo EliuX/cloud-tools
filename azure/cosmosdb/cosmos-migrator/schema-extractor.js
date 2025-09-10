@@ -15,7 +15,10 @@ export class ContainerSchema {
         uniqueKeyPolicy = null,
         conflictResolutionPolicy = null,
         analyticalStorageTtl = null,
-        defaultTtl = null
+        defaultTtl = null,
+        userDefinedFunctions = [],
+        storedProcedures = [],
+        triggers = []
     }) {
         this.name = name;
         this.partitionKeyPath = partitionKeyPath;
@@ -26,6 +29,9 @@ export class ContainerSchema {
         this.conflictResolutionPolicy = conflictResolutionPolicy;
         this.analyticalStorageTtl = analyticalStorageTtl;
         this.defaultTtl = defaultTtl;
+        this.userDefinedFunctions = userDefinedFunctions;
+        this.storedProcedures = storedProcedures;
+        this.triggers = triggers;
     }
 }
 
@@ -106,6 +112,11 @@ export class SchemaExtractor {
             const analyticalStorageTtl = properties.analyticalStorageTtl;
             const defaultTtl = properties.defaultTtl;
             
+            // Extract User Defined Functions, Stored Procedures, and Triggers
+            const userDefinedFunctions = await this._extractUserDefinedFunctions(container);
+            const storedProcedures = await this._extractStoredProcedures(container);
+            const triggers = await this._extractTriggers(container);
+            
             return new ContainerSchema({
                 name: containerName,
                 partitionKeyPath,
@@ -115,7 +126,10 @@ export class SchemaExtractor {
                 uniqueKeyPolicy,
                 conflictResolutionPolicy,
                 analyticalStorageTtl,
-                defaultTtl
+                defaultTtl,
+                userDefinedFunctions,
+                storedProcedures,
+                triggers
             });
             
         } catch (error) {
@@ -168,6 +182,56 @@ export class SchemaExtractor {
         await fs.writeFile(filePath, schemaJson, 'utf-8');
         
         console.log('Schema exported successfully');
+    }
+
+    /**
+     * Extract User Defined Functions from a container
+     */
+    async _extractUserDefinedFunctions(container) {
+        try {
+            const { resources: udfs } = await container.scripts.userDefinedFunctions.readAll().fetchAll();
+            return udfs.map(udf => ({
+                id: udf.id,
+                body: udf.body
+            }));
+        } catch (error) {
+            console.warn(`Could not extract UDFs: ${error.message}`);
+            return [];
+        }
+    }
+
+    /**
+     * Extract Stored Procedures from a container
+     */
+    async _extractStoredProcedures(container) {
+        try {
+            const { resources: sprocs } = await container.scripts.storedProcedures.readAll().fetchAll();
+            return sprocs.map(sproc => ({
+                id: sproc.id,
+                body: sproc.body
+            }));
+        } catch (error) {
+            console.warn(`Could not extract stored procedures: ${error.message}`);
+            return [];
+        }
+    }
+
+    /**
+     * Extract Triggers from a container
+     */
+    async _extractTriggers(container) {
+        try {
+            const { resources: triggers } = await container.scripts.triggers.readAll().fetchAll();
+            return triggers.map(trigger => ({
+                id: trigger.id,
+                body: trigger.body,
+                triggerOperation: trigger.triggerOperation,
+                triggerType: trigger.triggerType
+            }));
+        } catch (error) {
+            console.warn(`Could not extract triggers: ${error.message}`);
+            return [];
+        }
     }
 
     /**

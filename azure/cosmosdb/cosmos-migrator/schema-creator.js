@@ -106,10 +106,15 @@ export class SchemaCreator {
             }
             
             // Create container
-            await database.containers.createIfNotExists(containerOptions);
+            const { container } = await database.containers.createIfNotExists(containerOptions);
             
             const throughputInfo = containerSchema.throughput ? ` with ${containerSchema.throughput} RU/s` : ' without dedicated throughput';
             console.log(`Created container '${containerSchema.name}'${throughputInfo}`);
+            
+            // Create User Defined Functions, Stored Procedures, and Triggers
+            await this._createUserDefinedFunctions(container, containerSchema.userDefinedFunctions);
+            await this._createStoredProcedures(container, containerSchema.storedProcedures);
+            await this._createTriggers(container, containerSchema.triggers);
             
         } catch (error) {
             if (error.code === 409 && !overwrite) {
@@ -247,5 +252,91 @@ export class SchemaCreator {
         }
         
         return verificationResult;
+    }
+
+    /**
+     * Create User Defined Functions in a container
+     */
+    async _createUserDefinedFunctions(container, udfs) {
+        if (!udfs || udfs.length === 0) {
+            return;
+        }
+
+        console.log(`Creating ${udfs.length} User Defined Functions...`);
+        
+        for (const udf of udfs) {
+            try {
+                await container.scripts.userDefinedFunctions.create({
+                    id: udf.id,
+                    body: udf.body
+                });
+                console.log(`  ✅ Created UDF: ${udf.id}`);
+            } catch (error) {
+                if (error.code === 409) {
+                    console.warn(`  ⚠️ UDF '${udf.id}' already exists`);
+                } else {
+                    console.error(`  ❌ Failed to create UDF '${udf.id}': ${error.message}`);
+                    throw error;
+                }
+            }
+        }
+    }
+
+    /**
+     * Create Stored Procedures in a container
+     */
+    async _createStoredProcedures(container, sprocs) {
+        if (!sprocs || sprocs.length === 0) {
+            return;
+        }
+
+        console.log(`Creating ${sprocs.length} Stored Procedures...`);
+        
+        for (const sproc of sprocs) {
+            try {
+                await container.scripts.storedProcedures.create({
+                    id: sproc.id,
+                    body: sproc.body
+                });
+                console.log(`  ✅ Created Stored Procedure: ${sproc.id}`);
+            } catch (error) {
+                if (error.code === 409) {
+                    console.warn(`  ⚠️ Stored Procedure '${sproc.id}' already exists`);
+                } else {
+                    console.error(`  ❌ Failed to create Stored Procedure '${sproc.id}': ${error.message}`);
+                    throw error;
+                }
+            }
+        }
+    }
+
+    /**
+     * Create Triggers in a container
+     */
+    async _createTriggers(container, triggers) {
+        if (!triggers || triggers.length === 0) {
+            return;
+        }
+
+        console.log(`Creating ${triggers.length} Triggers...`);
+        
+        for (const trigger of triggers) {
+            try {
+                await container.scripts.triggers.create({
+                    id: trigger.id,
+                    body: trigger.body,
+                    triggerOperation: trigger.triggerOperation,
+                    triggerType: trigger.triggerType
+                });
+                console.log(`  ✅ Created Trigger: ${trigger.id}`);
+            } catch (error) {
+                if (error.code === 409) {
+                    console.warn(`  ⚠️ Trigger '${trigger.id}' already exists`);
+                } else {
+                    console.error(`  ❌ Failed to create Trigger '${trigger.id}': ${error.message}`);
+                    throw error;
+                }
+            }
+        }
     }
 }

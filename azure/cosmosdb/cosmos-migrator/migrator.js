@@ -169,6 +169,133 @@ export class CosmosMigrator {
     }
 
     /**
+     * Extract only User Defined Functions, Stored Procedures, and Triggers
+     */
+    async extractScripts(containerName = null, outputFile = null) {
+        console.log('Extracting Cosmos DB scripts...');
+        
+        try {
+            this.config.validate();
+            
+            const schema = await this.extractor.extractDatabaseSchema(this.config.azureDatabaseName);
+            
+            // Filter containers if specific container requested
+            let containersToProcess = schema.containers;
+            if (containerName) {
+                containersToProcess = schema.containers.filter(c => c.name === containerName);
+                if (containersToProcess.length === 0) {
+                    throw new Error(`Container '${containerName}' not found in database '${this.config.azureDatabaseName}'`);
+                }
+            }
+            
+            // Extract scripts data
+            const scriptsData = {
+                databaseName: schema.name,
+                extractedAt: new Date().toISOString(),
+                containers: containersToProcess.map(container => ({
+                    name: container.name,
+                    userDefinedFunctions: container.userDefinedFunctions,
+                    storedProcedures: container.storedProcedures,
+                    triggers: container.triggers
+                }))
+            };
+            
+            // Calculate statistics
+            const stats = {
+                totalUDFs: containersToProcess.reduce((sum, c) => sum + c.userDefinedFunctions.length, 0),
+                totalStoredProcedures: containersToProcess.reduce((sum, c) => sum + c.storedProcedures.length, 0),
+                totalTriggers: containersToProcess.reduce((sum, c) => sum + c.triggers.length, 0)
+            };
+            
+            const scriptsFile = outputFile || `${schema.name}-scripts.json`;
+            await this.extractor.exportSchemaToJson(scriptsData, scriptsFile);
+            
+            console.log(`✅ Scripts extracted and saved to: ${scriptsFile}`);
+            
+            return { success: true, scriptsData, scriptsFile, stats };
+            
+        } catch (error) {
+            console.error(`❌ Script extraction failed: ${error.message}`);
+            throw error;
+        }
+    }
+    
+    /**
+     * Create scripts from file
+     */
+    async createScriptsFromFile(scriptsFile, containerName = null) {
+        console.log(`Creating scripts from file: ${scriptsFile}`);
+        
+        try {
+            const scriptsData = await this.creator.loadSchemaFromJson(scriptsFile);
+            
+            // Update database name for emulator if different
+            const targetDatabaseName = this.config.emulatorDatabaseName || scriptsData.databaseName;
+            
+            const database = this.creator.client.database(targetDatabaseName);
+            
+            // Filter containers if specific container requested
+            let containersToProcess = scriptsData.containers;
+            if (containerName) {
+                containersToProcess = scriptsData.containers.filter(c => c.name === containerName);
+                if (containersToProcess.length === 0) {
+                    throw new Error(`Container '${containerName}' not found in scripts file`);
+                }
+            }
+            
+            const stats = {
+                createdUDFs: 0,
+                createdStoredProcedures: 0,
+                createdTriggers: 0
+            };
+            
+            // Create scripts for each container
+            for (const containerData of containersToProcess) {
+                console.log(`\nProcessing container: ${containerData.name}`);
+                
+                const container = database.container(containerData.name);
+                
+                // Verify container exists
+                try {
+                    await container.read();
+                } catch (error) {
+                    if (error.code === 404) {
+                        console.warn(`  ⚠️ Container '${containerData.name}' does not exist. Skipping...`);
+                        continue;
+                    }
+                    throw error;
+                }
+                
+                // Create UDFs
+                if (containerData.userDefinedFunctions && containerData.userDefinedFunctions.length > 0) {
+                    await this.creator._createUserDefinedFunctions(container, containerData.userDefinedFunctions);
+                    stats.createdUDFs += containerData.userDefinedFunctions.length;
+                }
+                
+                // Create Stored Procedures
+                if (containerData.storedProcedures && containerData.storedProcedures.length > 0) {
+                    await this.creator._createStoredProcedures(container, containerData.storedProcedures);
+                    stats.createdStoredProcedures += containerData.storedProcedures.length;
+                }
+                
+                // Create Triggers
+                if (containerData.triggers && containerData.triggers.length > 0) {
+                    await this.creator._createTriggers(container, containerData.triggers);
+                    stats.createdTriggers += containerData.triggers.length;
+                }
+            }
+            
+            console.log('\n✅ Scripts created successfully!');
+            
+            return { success: true, stats };
+            
+        } catch (error) {
+            console.error(`❌ Script creation failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
      * Print verification results
      */
     _printVerificationResults(verification) {
