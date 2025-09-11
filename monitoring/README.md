@@ -15,10 +15,24 @@ A comprehensive Windows monitoring solution that performs health checks on URLs 
 
 ## Quick Start
 
-1. **Configure Resources**: Edit `config.json` to define your monitoring targets
+1. **Configure Resources**: Copy `config.json.sample` to `config.json` and edit it to define your monitoring targets
 2. **Run Health Check**: Execute `.\HealthMonitor.ps1` for immediate monitoring
 3. **Setup Automation**: Run `.\setup-task-scheduler.ps1` to schedule automatic monitoring
 4. **View Dashboard**: Use `.\HealthMonitor.ps1 -Dashboard` to open web dashboard
+
+## Initial Setup
+
+Before using the health monitor, you need to create your configuration file:
+
+```powershell
+# Copy the sample configuration
+Copy-Item config.json.sample config.json
+
+# Edit config.json with your specific URLs and IP addresses
+notepad config.json
+```
+
+**Important**: The `config.json` file contains your specific monitoring targets and should not be committed to version control. It's already included in `.gitignore`.
 
 ## Configuration
 
@@ -135,7 +149,8 @@ Automated monitoring via Windows Task Scheduler provides:
 
 ```
 monitoring/
-├── config.json                    # Main configuration file
+├── config.json.sample             # Sample configuration file
+├── config.json                    # Your configuration file (create from sample)
 ├── HealthMonitor.ps1              # Main PowerShell script
 ├── setup-task-scheduler.ps1       # Task Scheduler setup script
 ├── dashboard/
