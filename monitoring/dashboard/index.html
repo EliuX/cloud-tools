@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Monitor Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .stats-bar {
+            display: flex;
+            background: #f8f9fa;
+            padding: 20px;
+            justify-content: space-around;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-number.success { color: #28a745; }
+        .stat-number.danger { color: #dc3545; }
+        .stat-number.info { color: #17a2b8; }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .resource-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid #ddd;
+            transition: all 0.3s;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .resource-card.healthy {
+            border-left-color: #28a745;
+        }
+
+        .resource-card.unhealthy {
+            border-left-color: #dc3545;
+        }
+
+        .resource-card.disabled {
+            border-left-color: #6c757d;
+            opacity: 0.6;
+        }
+
+        .resource-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .resource-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.unhealthy {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.disabled {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .resource-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.8em;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .error-message {
+            grid-column: 1 / -1;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .last-updated {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9em;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .resources-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .resource-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Health Monitor Dashboard</h1>
+            <div class="subtitle">Real-time monitoring of your critical resources</div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-number success" id="healthy-count">-</div>
+                <div class="stat-label">Healthy</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number danger" id="unhealthy-count">-</div>
+                <div class="stat-label">Unhealthy</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number info" id="total-count">-</div>
+                <div class="stat-label">Total Resources</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="auto-refresh">
+                <label for="auto-refresh-toggle">Auto Refresh:</label>
+                <label class="switch">
+                    <input type="checkbox" id="auto-refresh-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <span id="refresh-interval">30s</span>
+            </div>
+            <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh Now</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Loading health status...</div>
+        </div>
+
+        <div id="resources-container" class="resources-grid" style="display: none;">
+            <!-- Resources will be populated here -->
+        </div>
+
+        <div class="last-updated">
+            Last updated: <span id="last-updated-time">Never</span>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+        let isAutoRefreshEnabled = true;
+        const refreshIntervalSeconds = 30;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            refreshData();
+            startAutoRefresh();
+        });
+
+        function setupEventListeners() {
+            const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
+            autoRefreshToggle.addEventListener('change', function() {
+                isAutoRefreshEnabled = this.checked;
+                if (isAutoRefreshEnabled) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (isAutoRefreshEnabled) {
+                autoRefreshInterval = setInterval(refreshData, refreshIntervalSeconds * 1000);
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        async function refreshData() {
+            try {
+                showLoading(true);
+                
+                // In a real implementation, this would call the PowerShell script
+                // For now, we'll simulate the data
+                const data = await simulateHealthCheck();
+                
+                updateStats(data);
+                updateResourcesDisplay(data.results);
+                updateLastUpdated();
+                
+                showLoading(false);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showError('Failed to refresh health data');
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('resources-container');
+            
+            if (show) {
+                loading.style.display = 'block';
+                container.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+                container.style.display = 'grid';
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('healthy-count').textContent = data.success;
+            document.getElementById('unhealthy-count').textContent = data.failures;
+            document.getElementById('total-count').textContent = data.total;
+        }
+
+        function updateResourcesDisplay(results) {
+            const container = document.getElementById('resources-container');
+            container.innerHTML = '';
+
+            for (const [name, result] of Object.entries(results)) {
+                const card = createResourceCard(name, result);
+                container.appendChild(card);
+            }
+        }
+
+        function createResourceCard(name, result) {
+            const card = document.createElement('div');
+            card.className = `resource-card ${getResourceStatus(result)}`;
+
+            const statusText = result.skipped ? 'Disabled' : (result.success ? 'Healthy' : 'Unhealthy');
+            const statusClass = result.skipped ? 'disabled' : (result.success ? 'healthy' : 'unhealthy');
+
+            card.innerHTML = `
+                <div class="resource-header">
+                    <div class="resource-name">${name}</div>
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                </div>
+                <div class="resource-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Response Time</div>
+                        <div class="detail-value">${result.responseTime || 0}ms</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status Code</div>
+                        <div class="detail-value">${result.statusCode || 'N/A'}</div>
+                    </div>
+                    ${result.error ? `<div class="error-message">❌ ${result.error}</div>` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getResourceStatus(result) {
+            if (result.skipped) return 'disabled';
+            return result.success ? 'healthy' : 'unhealthy';
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated-time').textContent = now.toLocaleString();
+        }
+
+        function showError(message) {
+            // In a real implementation, show a proper error notification
+            console.error(message);
+        }
+
+        // Simulate health check data (replace with actual PowerShell integration)
+        async function simulateHealthCheck() {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const resources = [
+                { name: 'Google', type: 'url', success: Math.random() > 0.1 },
+                { name: 'Microsoft', type: 'url', success: Math.random() > 0.1 },
+                { name: 'Local Router', type: 'ping', success: Math.random() > 0.2 },
+                { name: 'DNS Server', type: 'ping', success: Math.random() > 0.1 }
+            ];
+
+            const results = {};
+            let successCount = 0;
+            let failureCount = 0;
+
+            resources.forEach(resource => {
+                const result = {
+                    success: resource.success,
+                    responseTime: Math.floor(Math.random() * 500) + 10,
+                    statusCode: resource.type === 'url' ? (resource.success ? 200 : 500) : null,
+                    error: resource.success ? null : 'Connection timeout'
+                };
+
+                results[resource.name] = result;
+
+                if (result.success) {
+                    successCount++;
+                } else {
+                    failureCount++;
+                }
+            });
+
+            return {
+                timestamp: new Date(),
+                total: resources.length,
+                success: successCount,
+                failures: failureCount,
+                results: results
+            };
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                e.preventDefault();
+                refreshData();
+            }
+        });
+    </script>
+</body>
+</html>

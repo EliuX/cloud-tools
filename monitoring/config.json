@@ -1,0 +1,46 @@
+{
+  "settings": {
+    "checkInterval": 60,
+    "urlTimeout": 10,
+    "pingTimeout": 5,
+    "retryAttempts": 3,
+    "retryDelay": 2,
+    "alertCooldown": 300,
+    "logLevel": "INFO",
+    "enableNotifications": true,
+    "enableLogging": true,
+    "logRetentionDays": 30
+  },
+  "resources": [
+    {
+      "name": "Google",
+      "type": "url",
+      "target": "https://www.google.com",
+      "timeout": 10,
+      "expectedStatus": 200,
+      "enabled": true
+    },
+    {
+      "name": "Microsoft",
+      "type": "url", 
+      "target": "https://www.microsoft.com",
+      "timeout": 10,
+      "expectedStatus": 200,
+      "enabled": true
+    },
+    {
+      "name": "Local Router",
+      "type": "ping",
+      "target": "192.168.1.1",
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "DNS Server",
+      "type": "ping",
+      "target": "8.8.8.8", 
+      "timeout": 5,
+      "enabled": true
+    }
+  ]
+}
