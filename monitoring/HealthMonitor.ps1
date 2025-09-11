@@ -334,28 +334,135 @@ class HealthMonitor {
     
     [void]GenerateDashboard() {
         $summary = $this.RunHealthCheck()
-        $dashboardPath = Join-Path "dashboard" "index.html"
+        $dashboardPath = "dashboard/index.html"
         
         $this.EnsureDashboardDirectory()
         $this.CreateDashboardFiles($summary)
         
         Write-Host "Dashboard generated at: $dashboardPath" -ForegroundColor Green
         
-        # Get absolute path for browser opening
-        $absolutePath = Resolve-Path $dashboardPath -ErrorAction SilentlyContinue
-        if (-not $absolutePath) {
-            $absolutePath = Join-Path (Get-Location) $dashboardPath
-        }
+        # Start local HTTP server for proper CORS handling
+        $this.StartDashboardServer()
+    }
+    
+    [void]StartDashboardServer() {
+        $port = 8080
+        $dashboardDir = "dashboard"
+        $url = "http://localhost:$port"
         
-        # Open in default browser (cross-platform)
-        if ($script:PlatformIsMacOS) {
-            & open $absolutePath
-        } elseif ($script:PlatformIsLinux) {
-            & xdg-open $absolutePath
-        } elseif ($script:PlatformIsWindows) {
-            Start-Process $absolutePath
-        } else {
-            Write-Host "Please open the dashboard manually: $absolutePath" -ForegroundColor Yellow
+        Write-Host "Starting local HTTP server on port $port..." -ForegroundColor Cyan
+        
+        try {
+            # Check if Python is available
+            $pythonCmd = $null
+            foreach ($cmd in @("python3", "python")) {
+                try {
+                    $null = & $cmd --version 2>$null
+                    $pythonCmd = $cmd
+                    break
+                } catch {
+                    continue
+                }
+            }
+            
+            if ($pythonCmd) {
+                Write-Host "Using $pythonCmd to start HTTP server..." -ForegroundColor Gray
+                Write-Host "Dashboard URL: $url" -ForegroundColor Green
+                Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
+                
+                # Open browser first
+                $this.OpenBrowser($url)
+                
+                # Start server (this will block)
+                Set-Location $dashboardDir
+                & $pythonCmd -m http.server $port
+            } else {
+                Write-Host "Python not found. Trying PowerShell HTTP server..." -ForegroundColor Yellow
+                $this.StartPowerShellServer($port)
+            }
+        } catch {
+            Write-Host "Failed to start HTTP server: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Falling back to file:// protocol (may have CORS issues)" -ForegroundColor Yellow
+            $this.OpenBrowser((Resolve-Path "dashboard/index.html"))
+        }
+    }
+    
+    [void]StartPowerShellServer([int]$port) {
+        $url = "http://localhost:$port"
+        
+        try {
+            # Create HTTP listener
+            $listener = New-Object System.Net.HttpListener
+            $listener.Prefixes.Add("$url/")
+            $listener.Start()
+            
+            Write-Host "PowerShell HTTP server started on $url" -ForegroundColor Green
+            Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
+            
+            # Open browser
+            $this.OpenBrowser($url)
+            
+            # Server loop
+            while ($listener.IsListening) {
+                $context = $listener.GetContext()
+                $request = $context.Request
+                $response = $context.Response
+                
+                $requestPath = $request.Url.AbsolutePath.TrimStart('/')
+                if ($requestPath -eq "" -or $requestPath -eq "/") {
+                    $requestPath = "index.html"
+                }
+                
+                $filePath = Join-Path "dashboard" $requestPath
+                
+                if (Test-Path $filePath) {
+                    $content = Get-Content $filePath -Raw -Encoding UTF8
+                    $contentType = switch ([System.IO.Path]::GetExtension($filePath)) {
+                        ".html" { "text/html; charset=utf-8" }
+                        ".css" { "text/css; charset=utf-8" }
+                        ".js" { "application/javascript; charset=utf-8" }
+                        ".json" { "application/json; charset=utf-8" }
+                        default { "text/plain; charset=utf-8" }
+                    }
+                    
+                    $response.ContentType = $contentType
+                    $response.StatusCode = 200
+                    $buffer = [System.Text.Encoding]::UTF8.GetBytes($content)
+                } else {
+                    $response.StatusCode = 404
+                    $buffer = [System.Text.Encoding]::UTF8.GetBytes("File not found: $requestPath")
+                }
+                
+                $response.ContentLength64 = $buffer.Length
+                $response.OutputStream.Write($buffer, 0, $buffer.Length)
+                $response.OutputStream.Close()
+            }
+        } catch {
+            Write-Host "PowerShell HTTP server failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw
+        } finally {
+            if ($listener -and $listener.IsListening) {
+                $listener.Stop()
+                $listener.Close()
+            }
+        }
+    }
+    
+    [void]OpenBrowser([string]$url) {
+        Start-Sleep -Seconds 1  # Give server time to start
+        
+        try {
+            if ($script:PlatformIsMacOS) {
+                & open $url
+            } elseif ($script:PlatformIsLinux) {
+                & xdg-open $url
+            } elseif ($script:PlatformIsWindows) {
+                Start-Process $url
+            } else {
+                Write-Host "Please open the dashboard manually: $url" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "Could not open browser automatically. Please open: $url" -ForegroundColor Yellow
         }
     }
     

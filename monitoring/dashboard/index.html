@@ -404,9 +404,8 @@
             try {
                 showLoading(true);
                 
-                // In a real implementation, this would call the PowerShell script
-                // For now, we'll simulate the data
-                const data = await simulateHealthCheck();
+                // Load real health check data from PowerShell script output
+                const data = await loadHealthData();
                 
                 updateStats(data);
                 updateResourcesDisplay(data.results);
@@ -492,46 +491,44 @@
             console.error(message);
         }
 
-        // Simulate health check data (replace with actual PowerShell integration)
-        async function simulateHealthCheck() {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            const resources = [
-                { name: 'Google', type: 'url', success: Math.random() > 0.1 },
-                { name: 'Microsoft', type: 'url', success: Math.random() > 0.1 },
-                { name: 'Local Router', type: 'ping', success: Math.random() > 0.2 },
-                { name: 'DNS Server', type: 'ping', success: Math.random() > 0.1 }
-            ];
-
-            const results = {};
-            let successCount = 0;
-            let failureCount = 0;
-
-            resources.forEach(resource => {
-                const result = {
-                    success: resource.success,
-                    responseTime: Math.floor(Math.random() * 500) + 10,
-                    statusCode: resource.type === 'url' ? (resource.success ? 200 : 500) : null,
-                    error: resource.success ? null : 'Connection timeout'
-                };
-
-                results[resource.name] = result;
-
-                if (result.success) {
-                    successCount++;
-                } else {
-                    failureCount++;
+        // Load real health check data from PowerShell script output
+        async function loadHealthData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            });
-
-            return {
-                timestamp: new Date(),
-                total: resources.length,
-                success: successCount,
-                failures: failureCount,
-                results: results
-            };
+                const data = await response.json();
+                
+                // Convert PowerShell data format to dashboard format
+                const convertedResults = {};
+                for (const [name, result] of Object.entries(data.results)) {
+                    convertedResults[name] = {
+                        success: result.Success,
+                        responseTime: result.ResponseTime,
+                        statusCode: result.StatusCode || null,
+                        error: result.Error
+                    };
+                }
+                
+                return {
+                    timestamp: data.timestamp,
+                    total: data.total,
+                    success: data.success,
+                    failures: data.failures,
+                    results: convertedResults
+                };
+            } catch (error) {
+                console.error('Failed to load health data:', error);
+                // Fallback to empty data structure
+                return {
+                    timestamp: new Date().toLocaleString(),
+                    total: 0,
+                    success: 0,
+                    failures: 0,
+                    results: {}
+                };
+            }
         }
 
         // Keyboard shortcuts
