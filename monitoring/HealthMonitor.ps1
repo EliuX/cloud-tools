@@ -30,7 +30,7 @@ if ($script:PlatformIsWindows) {
 }
 
 class HealthMonitor {
-    [hashtable]$Config
+    [object]$Config
     [hashtable]$LastAlerts
     [string]$LogPath
     
@@ -74,7 +74,7 @@ class HealthMonitor {
         }
     }
     
-    [hashtable]TestUrl([hashtable]$resource) {
+    [hashtable]TestUrl([object]$resource) {
         $result = @{
             Success = $false
             ResponseTime = 0
@@ -110,7 +110,7 @@ class HealthMonitor {
         return $result
     }
     
-    [hashtable]TestPing([hashtable]$resource) {
+    [hashtable]TestPing([object]$resource) {
         $result = @{
             Success = $false
             ResponseTime = 0
@@ -240,7 +240,7 @@ class HealthMonitor {
         $this.LastAlerts[$resourceName] = Get-Date
     }
     
-    [hashtable]CheckResource([hashtable]$resource) {
+    [hashtable]CheckResource([object]$resource) {
         if (-not $resource.enabled) {
             return @{ Success = $true; Skipped = $true }
         }
