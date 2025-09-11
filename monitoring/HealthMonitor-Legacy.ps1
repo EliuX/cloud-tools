@@ -1,4 +1,4 @@
-# Windows Health Monitor
+# Windows Health Monitor - PowerShell 5.1 Compatible Version
 # Monitors URLs and IPs with configurable timeouts and Windows notifications
 
 param(
@@ -8,36 +8,31 @@ param(
     [switch]$Dashboard = $false
 )
 
-# Store parameters in script scope for class access
-$script:RunOnce = $RunOnce
-$script:Silent = $Silent
-$script:Dashboard = $Dashboard
+# PowerShell 5.1 compatible platform detection
+$IsWindowsPS = $true
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    $IsWindowsPS = $IsWindows
+}
 
-# Check platform and available notification methods
-$script:PlatformIsWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSEdition -eq 'Desktop'
-$script:PlatformIsMacOS = $PSVersionTable.Platform -eq 'Unix' -and [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)
-$script:PlatformIsLinux = $PSVersionTable.Platform -eq 'Unix' -and -not $script:PlatformIsMacOS
-
-# Import required modules for Windows integration (Windows only)
-if ($script:PlatformIsWindows) {
+# Import required modules for Windows integration
+if ($IsWindowsPS) {
     try {
         Add-Type -AssemblyName System.Windows.Forms
         Add-Type -AssemblyName System.Drawing
-        Add-Type -AssemblyName PresentationFramework
     } catch {
         Write-Warning "Some Windows-specific assemblies could not be loaded. Notifications may be limited."
     }
 }
 
 class HealthMonitor {
-    [hashtable]$Config
+    [object]$Config
     [hashtable]$LastAlerts
     [string]$LogPath
     
     HealthMonitor([string]$configPath) {
         $this.LoadConfig($configPath)
         $this.LastAlerts = @{}
-        $this.LogPath = Join-Path "logs" "health-monitor.log"
+        $this.LogPath = ".\logs\health-monitor.log"
         $this.EnsureLogDirectory()
     }
     
@@ -47,7 +42,8 @@ class HealthMonitor {
         }
         try {
             $configContent = Get-Content $path -Raw
-            $this.Config = $configContent | ConvertFrom-Json -AsHashtable
+            # PowerShell 5.1 compatible JSON parsing
+            $this.Config = $configContent | ConvertFrom-Json
         } catch {
             throw "Invalid JSON in configuration file: $($_.Exception.Message)"
         }
@@ -73,7 +69,7 @@ class HealthMonitor {
         }
     }
     
-    [hashtable]TestUrl([hashtable]$resource) {
+    [hashtable]TestUrl([object]$resource) {
         $result = @{
             Success = $false
             ResponseTime = 0
@@ -109,7 +105,7 @@ class HealthMonitor {
         return $result
     }
     
-    [hashtable]TestPing([hashtable]$resource) {
+    [hashtable]TestPing([object]$resource) {
         $result = @{
             Success = $false
             ResponseTime = 0
@@ -143,13 +139,8 @@ class HealthMonitor {
         if (-not $this.Config.settings.enableNotifications) { return }
         
         try {
-            # Determine platform and use appropriate notification method
-            if ($script:PlatformIsWindows) {
+            if ($IsWindowsPS) {
                 $this.ShowWindowsNotification($title, $message, $icon)
-            } elseif ($script:PlatformIsMacOS) {
-                $this.ShowMacNotification($title, $message, $icon)
-            } elseif ($script:PlatformIsLinux) {
-                $this.ShowLinuxNotification($title, $message, $icon)
             } else {
                 $this.ShowConsoleNotification($title, $message, $icon)
             }
@@ -163,48 +154,30 @@ class HealthMonitor {
     }
     
     [void]ShowWindowsNotification([string]$title, [string]$message, [string]$icon) {
-        # Skip Windows-specific notifications on non-Windows platforms
-        if (-not $script:PlatformIsWindows) {
-            throw "Windows notifications not available on this platform"
-        }
-        
         try {
-            # Simple console notification as fallback since Windows Forms isn't available
+            # PowerShell 5.1 compatible balloon notification
+            $notification = New-Object System.Windows.Forms.NotifyIcon
+            $notification.Icon = [System.Drawing.SystemIcons]::Warning
+            $notification.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Warning
+            $notification.BalloonTipText = $message
+            $notification.BalloonTipTitle = $title
+            $notification.Visible = $true
+            $notification.ShowBalloonTip(5000)
+            
+            Start-Sleep -Seconds 1
+            $notification.Dispose()
+        } catch {
+            $this.WriteLog("ERROR", "Windows notification failed: $($_.Exception.Message)")
             $this.ShowConsoleNotification($title, $message, $icon)
-        } catch {
-            throw "Windows notification failed: $($_.Exception.Message)"
-        }
-    }
-    
-    [void]ShowMacNotification([string]$title, [string]$message, [string]$icon) {
-        try {
-            $script = "display notification `"$message`" with title `"$title`""
-            & osascript -e $script
-        } catch {
-            throw "macOS notification failed: $($_.Exception.Message)"
-        }
-    }
-    
-    [void]ShowLinuxNotification([string]$title, [string]$message, [string]$icon) {
-        try {
-            $iconArg = switch ($icon.ToLower()) {
-                "error" { "error" }
-                "warning" { "warning" }
-                "info" { "info" }
-                default { "dialog-information" }
-            }
-            & notify-send --icon=$iconArg "$title" "$message"
-        } catch {
-            throw "Linux notification failed: $($_.Exception.Message)"
         }
     }
     
     [void]ShowConsoleNotification([string]$title, [string]$message, [string]$icon) {
         $iconSymbol = switch ($icon.ToLower()) {
-            "error" { "❌" }
-            "warning" { "⚠️" }
-            "info" { "ℹ️" }
-            default { "🔔" }
+            "error" { "X" }
+            "warning" { "!" }
+            "info" { "i" }
+            default { "*" }
         }
         
         $color = switch ($icon.ToLower()) {
@@ -214,8 +187,8 @@ class HealthMonitor {
             default { "White" }
         }
         
-        Write-Host "`n$iconSymbol $title" -ForegroundColor $color
-        Write-Host "   $message" -ForegroundColor Gray
+        Write-Host "`n[$iconSymbol] $title" -ForegroundColor $color
+        Write-Host "    $message" -ForegroundColor Gray
         Write-Host ""
     }
     
@@ -239,7 +212,7 @@ class HealthMonitor {
         $this.LastAlerts[$resourceName] = Get-Date
     }
     
-    [hashtable]CheckResource([hashtable]$resource) {
+    [hashtable]CheckResource([object]$resource) {
         if (-not $resource.enabled) {
             return @{ Success = $true; Skipped = $true }
         }
@@ -314,7 +287,7 @@ class HealthMonitor {
                     Write-Host "⚠ $($summary.Failures) of $($summary.Total) resources are down" -ForegroundColor Red
                 }
                 
-                if (-not $script:RunOnce) {
+                if (-not $RunOnce) {
                     $interval = $this.Config.settings.checkInterval
                     Write-Host "Next check in $interval seconds..." -ForegroundColor Gray
                     Start-Sleep -Seconds $interval
@@ -324,42 +297,32 @@ class HealthMonitor {
                 $this.WriteLog("ERROR", "Monitoring cycle failed: $($_.Exception.Message)")
                 Write-Host "Error in monitoring cycle: $($_.Exception.Message)" -ForegroundColor Red
                 
-                if (-not $script:RunOnce) {
+                if (-not $RunOnce) {
                     Start-Sleep -Seconds 30
                 }
             }
-        } while (-not $script:RunOnce)
+        } while (-not $RunOnce)
     }
     
     [void]GenerateDashboard() {
         $summary = $this.RunHealthCheck()
-        $dashboardPath = Join-Path "dashboard" "index.html"
+        $dashboardPath = ".\dashboard\index.html"
         
         $this.EnsureDashboardDirectory()
         $this.CreateDashboardFiles($summary)
         
         Write-Host "Dashboard generated at: $dashboardPath" -ForegroundColor Green
         
-        # Get absolute path for browser opening
-        $absolutePath = Resolve-Path $dashboardPath -ErrorAction SilentlyContinue
-        if (-not $absolutePath) {
-            $absolutePath = Join-Path (Get-Location) $dashboardPath
-        }
-        
-        # Open in default browser (cross-platform)
-        if ($script:PlatformIsMacOS) {
-            & open $absolutePath
-        } elseif ($script:PlatformIsLinux) {
-            & xdg-open $absolutePath
-        } elseif ($script:PlatformIsWindows) {
-            Start-Process $absolutePath
+        # PowerShell 5.1 compatible browser opening
+        if ($IsWindowsPS) {
+            Start-Process $dashboardPath
         } else {
-            Write-Host "Please open the dashboard manually: $absolutePath" -ForegroundColor Yellow
+            Write-Host "Please open the dashboard manually: $dashboardPath" -ForegroundColor Yellow
         }
     }
     
     [void]EnsureDashboardDirectory() {
-        $dashboardDir = "dashboard"
+        $dashboardDir = ".\dashboard"
         if (-not (Test-Path $dashboardDir)) {
             New-Item -ItemType Directory -Path $dashboardDir -Force | Out-Null
         }
@@ -376,7 +339,7 @@ class HealthMonitor {
         }
         
         $jsonData = $dashboardData | ConvertTo-Json -Depth 10
-        $dataFile = Join-Path "dashboard" "data.json"
+        $dataFile = ".\dashboard\data.json"
         
         # Write current status to JSON file for dashboard consumption
         Set-Content -Path $dataFile -Value $jsonData -Encoding UTF8
