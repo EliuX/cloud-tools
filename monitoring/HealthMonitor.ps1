@@ -47,7 +47,8 @@ class HealthMonitor {
         }
         try {
             $configContent = Get-Content $path -Raw
-            $this.Config = $configContent | ConvertFrom-Json -AsHashtable
+            # PowerShell 5.1 compatible JSON parsing
+            $this.Config = $configContent | ConvertFrom-Json
         } catch {
             throw "Invalid JSON in configuration file: $($_.Exception.Message)"
         }

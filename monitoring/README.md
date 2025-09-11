@@ -82,9 +82,12 @@ notepad config.json
 
 ### PowerShell Version Compatibility
 
-This health monitor supports both modern PowerShell (7+) and legacy Windows PowerShell (5.1):
+This health monitor provides two versions for different PowerShell environments:
 
-#### **Windows PowerShell 5.1 (Built-in Windows)**
+#### **Main Script: HealthMonitor.ps1**
+- **Compatible with**: PowerShell 5.1+ and PowerShell 7+
+- **Recommended for**: All users (now fully compatible with Windows PowerShell 5.1)
+
 ```powershell
 # Check your PowerShell version
 $PSVersionTable.PSVersion
@@ -92,23 +95,30 @@ $PSVersionTable.PSVersion
 # Execute with Windows PowerShell 5.1
 powershell.exe -File ".\HealthMonitor.ps1" -RunOnce
 
-# Or run directly in PowerShell 5.1 console
-.\HealthMonitor.ps1 -RunOnce
-```
-
-#### **PowerShell 7+ (Cross-Platform)**
-```powershell
-# Install PowerShell 7+ on Windows (recommended)
-winget install Microsoft.PowerShell
-
-# Execute with modern PowerShell
+# Or execute with PowerShell 7+
 pwsh -File ".\HealthMonitor.ps1" -RunOnce
 
-# Or run directly in pwsh console
+# Or run directly in console
 .\HealthMonitor.ps1 -RunOnce
 ```
 
-**Note**: If you encounter Unicode character display issues on Windows PowerShell 5.1, the script automatically uses ASCII-compatible characters for better compatibility.
+#### **Legacy Script: HealthMonitor-Legacy.ps1**
+- **Compatible with**: PowerShell 5.1+ only
+- **Use when**: You experience issues with the main script on older systems
+- **Limitations**: Windows-only, classic balloon notifications
+
+```powershell
+# Use legacy version if needed
+.\HealthMonitor-Legacy.ps1 -RunOnce
+```
+
+#### **PowerShell 7+ Installation (Optional)**
+```powershell
+# Install PowerShell 7+ on Windows for enhanced features
+winget install Microsoft.PowerShell
+```
+
+**Note**: The main script now works on both PowerShell versions with automatic compatibility handling for Unicode characters and platform detection.
 
 ### PowerShell Script Options
 
