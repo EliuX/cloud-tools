@@ -8,9 +8,26 @@ param(
     [switch]$Dashboard = $false
 )
 
-# Import required modules
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+# Store parameters in script scope for class access
+$script:RunOnce = $RunOnce
+$script:Silent = $Silent
+$script:Dashboard = $Dashboard
+
+# Check platform and available notification methods
+$script:PlatformIsWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.PSEdition -eq 'Desktop'
+$script:PlatformIsMacOS = $PSVersionTable.Platform -eq 'Unix' -and [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)
+$script:PlatformIsLinux = $PSVersionTable.Platform -eq 'Unix' -and -not $script:PlatformIsMacOS
+
+# Import required modules for Windows integration (Windows only)
+if ($script:PlatformIsWindows) {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        Add-Type -AssemblyName PresentationFramework
+    } catch {
+        Write-Warning "Some Windows-specific assemblies could not be loaded. Notifications may be limited."
+    }
+}
 
 class HealthMonitor {
     [hashtable]$Config
@@ -121,26 +138,80 @@ class HealthMonitor {
         if (-not $this.Config.settings.enableNotifications) { return }
         
         try {
-            # Create notification using Windows Toast
-            $app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
-            
-            # Fallback to balloon tip
-            $notification = New-Object System.Windows.Forms.NotifyIcon
-            $notification.Icon = [System.Drawing.SystemIcons]::Warning
-            $notification.BalloonTipIcon = $icon
-            $notification.BalloonTipText = $message
-            $notification.BalloonTipTitle = $title
-            $notification.Visible = $true
-            $notification.ShowBalloonTip(5000)
-            
-            Start-Sleep -Seconds 1
-            $notification.Dispose()
+            # Determine platform and use appropriate notification method
+            if ($script:PlatformIsWindows) {
+                $this.ShowWindowsNotification($title, $message, $icon)
+            } elseif ($script:PlatformIsMacOS) {
+                $this.ShowMacNotification($title, $message, $icon)
+            } elseif ($script:PlatformIsLinux) {
+                $this.ShowLinuxNotification($title, $message, $icon)
+            } else {
+                $this.ShowConsoleNotification($title, $message, $icon)
+            }
             
             $this.WriteLog("INFO", "Notification sent: $title - $message")
         }
         catch {
             $this.WriteLog("ERROR", "Failed to send notification: $($_.Exception.Message)")
+            $this.ShowConsoleNotification($title, $message, $icon)
         }
+    }
+    
+    [void]ShowWindowsNotification([string]$title, [string]$message, [string]$icon) {
+        # Skip Windows-specific notifications on non-Windows platforms
+        if (-not $script:PlatformIsWindows) {
+            throw "Windows notifications not available on this platform"
+        }
+        
+        try {
+            # Simple console notification as fallback since Windows Forms isn't available
+            $this.ShowConsoleNotification($title, $message, $icon)
+        } catch {
+            throw "Windows notification failed: $($_.Exception.Message)"
+        }
+    }
+    
+    [void]ShowMacNotification([string]$title, [string]$message, [string]$icon) {
+        try {
+            $script = "display notification `"$message`" with title `"$title`""
+            & osascript -e $script
+        } catch {
+            throw "macOS notification failed: $($_.Exception.Message)"
+        }
+    }
+    
+    [void]ShowLinuxNotification([string]$title, [string]$message, [string]$icon) {
+        try {
+            $iconArg = switch ($icon.ToLower()) {
+                "error" { "error" }
+                "warning" { "warning" }
+                "info" { "info" }
+                default { "dialog-information" }
+            }
+            & notify-send --icon=$iconArg "$title" "$message"
+        } catch {
+            throw "Linux notification failed: $($_.Exception.Message)"
+        }
+    }
+    
+    [void]ShowConsoleNotification([string]$title, [string]$message, [string]$icon) {
+        $iconSymbol = switch ($icon.ToLower()) {
+            "error" { "❌" }
+            "warning" { "⚠️" }
+            "info" { "ℹ️" }
+            default { "🔔" }
+        }
+        
+        $color = switch ($icon.ToLower()) {
+            "error" { "Red" }
+            "warning" { "Yellow" }
+            "info" { "Cyan" }
+            default { "White" }
+        }
+        
+        Write-Host "`n$iconSymbol $title" -ForegroundColor $color
+        Write-Host "   $message" -ForegroundColor Gray
+        Write-Host ""
     }
     
     [bool]ShouldAlert([string]$resourceName) {
@@ -238,7 +309,7 @@ class HealthMonitor {
                     Write-Host "⚠ $($summary.Failures) of $($summary.Total) resources are down" -ForegroundColor Red
                 }
                 
-                if (-not $RunOnce) {
+                if (-not $script:RunOnce) {
                     $interval = $this.Config.settings.checkInterval
                     Write-Host "Next check in $interval seconds..." -ForegroundColor Gray
                     Start-Sleep -Seconds $interval
@@ -248,11 +319,11 @@ class HealthMonitor {
                 $this.WriteLog("ERROR", "Monitoring cycle failed: $($_.Exception.Message)")
                 Write-Host "Error in monitoring cycle: $($_.Exception.Message)" -ForegroundColor Red
                 
-                if (-not $RunOnce) {
+                if (-not $script:RunOnce) {
                     Start-Sleep -Seconds 30
                 }
             }
-        } while (-not $RunOnce)
+        } while (-not $script:RunOnce)
     }
     
     [void]GenerateDashboard() {
@@ -264,8 +335,16 @@ class HealthMonitor {
         
         Write-Host "Dashboard generated at: $dashboardPath" -ForegroundColor Green
         
-        # Open in default browser
-        Start-Process $dashboardPath
+        # Open in default browser (cross-platform)
+        if ($script:PlatformIsMacOS) {
+            & open $dashboardPath
+        } elseif ($script:PlatformIsLinux) {
+            & xdg-open $dashboardPath
+        } elseif ($script:PlatformIsWindows) {
+            Start-Process $dashboardPath
+        } else {
+            Write-Host "Please open the dashboard manually: $dashboardPath" -ForegroundColor Yellow
+        }
     }
     
     [void]EnsureDashboardDirectory() {
