@@ -201,10 +201,10 @@ class HealthMonitor {
     
     [void]ShowConsoleNotification([string]$title, [string]$message, [string]$icon) {
         $iconSymbol = switch ($icon.ToLower()) {
-            "error" { "❌" }
-            "warning" { "⚠️" }
-            "info" { "ℹ️" }
-            default { "🔔" }
+            "error" { "[X]" }
+            "warning" { "[!]" }
+            "info" { "[i]" }
+            default { "[*]" }
         }
         
         $color = switch ($icon.ToLower()) {
@@ -309,9 +309,9 @@ class HealthMonitor {
                 $summary = $this.RunHealthCheck()
                 
                 if ($summary.Failures -eq 0) {
-                    Write-Host "✓ All $($summary.Total) resources are healthy" -ForegroundColor Green
+                    Write-Host "[OK] All $($summary.Total) resources are healthy" -ForegroundColor Green
                 } else {
-                    Write-Host "⚠ $($summary.Failures) of $($summary.Total) resources are down" -ForegroundColor Red
+                    Write-Host "[WARN] $($summary.Failures) of $($summary.Total) resources are down" -ForegroundColor Red
                 }
                 
                 if (-not $script:RunOnce) {
