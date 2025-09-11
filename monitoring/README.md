@@ -80,6 +80,36 @@ notepad config.json
 
 ## Usage
 
+### PowerShell Version Compatibility
+
+This health monitor supports both modern PowerShell (7+) and legacy Windows PowerShell (5.1):
+
+#### **Windows PowerShell 5.1 (Built-in Windows)**
+```powershell
+# Check your PowerShell version
+$PSVersionTable.PSVersion
+
+# Execute with Windows PowerShell 5.1
+powershell.exe -File ".\HealthMonitor.ps1" -RunOnce
+
+# Or run directly in PowerShell 5.1 console
+.\HealthMonitor.ps1 -RunOnce
+```
+
+#### **PowerShell 7+ (Cross-Platform)**
+```powershell
+# Install PowerShell 7+ on Windows (recommended)
+winget install Microsoft.PowerShell
+
+# Execute with modern PowerShell
+pwsh -File ".\HealthMonitor.ps1" -RunOnce
+
+# Or run directly in pwsh console
+.\HealthMonitor.ps1 -RunOnce
+```
+
+**Note**: If you encounter Unicode character display issues on Windows PowerShell 5.1, the script automatically uses ASCII-compatible characters for better compatibility.
+
 ### PowerShell Script Options
 
 ```powershell
